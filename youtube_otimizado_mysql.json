@@ -252,7 +252,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.GOOGLE_GEMINI_API_KEY }}"
+              "value": "Bearer [CONFIGURE_NO_N8N]"
             },
             {
               "name": "Content-Type",

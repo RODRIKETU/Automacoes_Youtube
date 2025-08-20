@@ -187,7 +187,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.GOOGLE_GEMINI_API_KEY }}"
+              "value": "Bearer [CONFIGURE_NO_N8N]"
             },
             {
               "name": "Content-Type",
@@ -723,7 +723,7 @@
           "parameters": [
             {
               "name": "Authorization\t",
-              "value": "Bearer SUA_APIKEY"
+              "value": "Bearer [CONFIGURE_NO_N8N]"
             }
           ]
         },
@@ -1899,7 +1899,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer r8_SUA_APIKEY"
+              "value": "Bearer [CONFIGURE_NO_N8N]"
             },
             {
               "name": "Prefer",
@@ -2369,7 +2369,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.HUGGING_FACE_TOKEN }}"
+              "value": "Bearer [CONFIGURE_NO_N8N]"
             },
             {
               "name": "Contet-Type",

@@ -125,7 +125,21 @@ SELECT file_type, COUNT(*) as arquivos,
 FROM youtube_files GROUP BY file_type;
 ```
 
-## 🔄 Fluxo de Automação
+## � Segurança
+
+Este projeto implementa as melhores práticas de segurança:
+
+- ✅ **Credenciais Gerenciadas**: Tokens configurados no n8n (criptografados)
+- ✅ **Repositório Limpo**: Sem segredos hardcoded no código
+- ✅ **Configuração Isolada**: Credenciais separadas dos workflows
+- ✅ **Documentação Segura**: Guias detalhados para configuração
+
+📚 **Guias de Segurança**:
+- [`CONFIGURACAO_N8N_CREDENCIAIS.md`](CONFIGURACAO_N8N_CREDENCIAIS.md) - Setup de credenciais
+- [`README_SEGURANCA.md`](README_SEGURANCA.md) - Práticas de segurança
+- [`CREDENCIAIS.md`](CREDENCIAIS.md) - Credenciais do sistema
+
+## 🔄 Fluxos n8n
 
 ```mermaid
 graph TD
