@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Automation - Seletor de Temas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+        }
+
+        .loading .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .theme-card {
+            border: 2px solid #e1e5e9;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .theme-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea10 0%, #764ba220 100%);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .theme-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .theme-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.5rem;
+            color: white;
+            font-weight: bold;
+        }
+
+        .theme-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .theme-description {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .theme-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .theme-tag {
+            background: #f8f9fa;
+            color: #495057;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .theme-card.selected .theme-tag {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .action-section {
+            text-align: center;
+            padding: 30px 0;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .start-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .start-button.processing {
+            background: #28a745;
+        }
+
+        .start-button .spinner {
+            border: 2px solid #ffffff30;
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .themes-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .theme-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 YouTube Automation</h1>
+            <p>Selecione um tema para criar seu vídeo automaticamente</p>
+        </div>
+
+        <div class="content">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Carregando temas disponíveis...</p>
+            </div>
+
+            <div id="themes-container" style="display: none;">
+                <div id="themes-grid" class="themes-grid">
+                    <!-- Temas serão carregados aqui via JavaScript -->
+                </div>
+
+                <div class="action-section">
+                    <button id="start-button" class="start-button" disabled>
+                        Selecione um tema para começar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Sistema de automação para criação de vídeos YouTube com IA</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedTheme = null;
+        let themes = [];
+
+        // Configuração da API
+        const API_CONFIG = {
+            BASE_URL: window.location.origin,
+            THEMES_URL: '/api/themes',
+            START_URL: '/api/start-automation'
+        };
+
+        // Ícones para cada tema
+        const THEME_ICONS = {
+            'alien': '👽',
+            'scroll': '📜',
+            'atom': '⚛️',
+            'user-circle': '👤',
+            'globe': '🌍',
+            'trending-up': '📈'
+        };
+
+        async function loadThemes() {
+            try {
+                const response = await fetch(API_CONFIG.THEMES_URL);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Erro ao carregar temas');
+                }
+                
+                themes = result.data;
+                renderThemes(themes);
+                
+                // Ocultar loading e mostrar temas
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('themes-container').style.display = 'block';
+
+            } catch (error) {
+                console.error('Erro ao carregar temas:', error);
+                showNotification('Erro ao carregar temas. Tente novamente.', 'error');
+                
+                // Mostrar interface mesmo com erro (usando dados mock)
+                const mockThemes = [
+                    {
+                        id: 1,
+                        nome: 'Horror Extraterrestre',
+                        descricao: 'Histórias de terror envolvendo alienígenas e abdução',
+                        tags_sugeridas: ['horror', 'extraterrestre', 'alien', 'ufo', 'terror'],
+                        cor_hex: '#8B0000',
+                        icone: 'alien'
+                    }
+                ];
+                
+                themes = mockThemes;
+                renderThemes(themes);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('themes-container').style.display = 'block';
+            }
+        }
+
+        function renderThemes(themes) {
+            const grid = document.getElementById('themes-grid');
+            grid.innerHTML = '';
+
+            themes.forEach(theme => {
+                const themeCard = document.createElement('div');
+                themeCard.className = 'theme-card';
+                themeCard.setAttribute('data-theme-id', theme.id);
+
+                const tags = Array.isArray(theme.tags_sugeridas) 
+                    ? theme.tags_sugeridas 
+                    : JSON.parse(theme.tags_sugeridas || '[]');
+
+                themeCard.innerHTML = `
+                    <div class="theme-header">
+                        <div class="theme-icon" style="background-color: ${theme.cor_hex}">
+                            ${THEME_ICONS[theme.icone] || '📄'}
+                        </div>
+                        <div>
+                            <div class="theme-title">${theme.nome}</div>
+                        </div>
+                    </div>
+                    <div class="theme-description">${theme.descricao}</div>
+                    <div class="theme-tags">
+                        ${tags.map(tag => `<span class="theme-tag">#${tag}</span>`).join('')}
+                    </div>
+                `;
+
+                themeCard.addEventListener('click', () => selectTheme(theme, themeCard));
+                grid.appendChild(themeCard);
+            });
+        }
+
+        function selectTheme(theme, cardElement) {
+            // Remove seleção anterior
+            document.querySelectorAll('.theme-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Adiciona seleção atual
+            cardElement.classList.add('selected');
+            selectedTheme = theme;
+
+            // Atualiza botão
+            const button = document.getElementById('start-button');
+            button.disabled = false;
+            button.textContent = `Criar vídeo: ${theme.nome}`;
+        }
+
+        async function startAutomation() {
+            if (!selectedTheme) return;
+
+            const button = document.getElementById('start-button');
+            button.classList.add('processing');
+            button.innerHTML = `
+                <span class="spinner"></span>
+                Criando vídeo...
+            `;
+            button.disabled = true;
+
+            try {
+                const response = await fetch(API_CONFIG.START_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tema_id: selectedTheme.id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Automação iniciada com sucesso! O vídeo será criado em breve.', 'success');
+                    
+                    // Reset interface após 3 segundos
+                    setTimeout(() => {
+                        resetInterface();
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || 'Falha na resposta da API');
+                }
+
+            } catch (error) {
+                console.error('Erro ao iniciar automação:', error);
+                showNotification('Erro ao iniciar automação: ' + error.message, 'error');
+                
+                // Reset button
+                button.classList.remove('processing');
+                button.textContent = `Criar vídeo: ${selectedTheme.nome}`;
+                button.disabled = false;
+            }
+        }
+
+        function resetInterface() {
+            selectedTheme = null;
+            document.querySelectorAll('.theme-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const button = document.getElementById('start-button');
+            button.classList.remove('processing');
+            button.textContent = 'Selecione um tema para começar';
+            button.disabled = true;
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Animar entrada
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            // Remover após 5 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 5000);
+        }
+
+        // Event listeners
+        document.getElementById('start-button').addEventListener('click', startAutomation);
+
+        // Carregar temas ao inicializar
+        document.addEventListener('DOMContentLoaded', loadThemes);
+    </script>
+</body>
+</html>

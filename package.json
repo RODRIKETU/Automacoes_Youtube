@@ -1,0 +1,43 @@
+{
+  "name": "youtube-automation-interface",
+  "version": "1.0.0",
+  "description": "Interface web para seleção de temas e automação de criação de vídeos YouTube",
+  "main": "api_server.js",
+  "scripts": {
+    "start": "node api_server.js",
+    "dev": "nodemon api_server.js",
+    "setup-db": "mysql -u root -p < setup_mysql.sql",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "youtube",
+    "automation",
+    "n8n",
+    "mysql",
+    "api",
+    "interface"
+  ],
+  "author": "YouTube Automation System",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.3",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "homepage": ".",
+  "bugs": {
+    "url": "."
+  }
+}

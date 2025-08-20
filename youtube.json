@@ -1,0 +1,3415 @@
+{
+  "name": "youtube",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/y3X5crcIDtFawPx7bcNq/stream",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $('ROTEIRO').item.json.roteiro }}\",\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"voice_settings\": {\n    \"stability\": 0.7,\n    \"similarity_boost\": 0.9\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -13088,
+        560
+      ],
+      "id": "aa752226-245a-479c-b338-fcef9b2b6f7c",
+      "name": "HTTP ElevenLabs",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "uvgSFb54b99bHsmp",
+          "name": "ElevenLabs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let texto =  $input.first().json.output || '';\n\n// Remove aspas externas se houver\ntexto = texto.replace(/^\"(.*)\"$/, '$1');\n\n// Substitui \"R$\" por \"reais\"\ntexto = texto.replace(/R\\$/g, 'reais');\n\n// Remove quebras de linha e múltiplos espaços\ntexto = texto.replace(/[\\r\\n]+/g, ' ');           // quebra de linha → espaço\ntexto = texto.replace(/\\s\\s+/g, ' ');             // múltiplos espaços → um espaço\n\n// Remove espaços no início e fim\ntexto = texto.trim();\n\n// Remove caracteres de controle invisíveis (exceto espaço normal)\ntexto = texto.replace(/[\\u0000-\\u001F\\u007F]+/g, '');\n\n// Escapa aspas internas se for necessário usar com JSON.stringify (opcional)\ntexto = texto.replace(/\"/g, '\\\\\"');\n\nreturn [\n  {\n    json: {\n      roteiro: texto\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16080,
+        544
+      ],
+      "id": "f7acd45e-82d3-4b58-89be-e9ab65fbb386",
+      "name": "Remove caracteres especiais"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.content.parts[0].text\n  \n\n// Corrige a string com aspas escapadas e quebras de linha\nconst cleaned = raw.replace(/\\\\n/g, '').replace(/\\\\\"/g, '\"');\n\n// Transforma a string JSON em objeto real\nconst parsed = JSON.parse(cleaned);\n\n// Retorna cada prompt como um item separado\nreturn parsed.image_prompts.map((item, index) => ({\n  json: {\n    ...item,\n    index: index + 1\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11584,
+        304
+      ],
+      "id": "1303f69a-071e-48a8-b665-301cb34e2bcd",
+      "name": "Limpa o JSON"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -10624,
+        16
+      ],
+      "id": "e9db0038-ba13-42e1-9114-c41694fa48b0",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "command": "rm -rf /tmp/*"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -17328,
+        128
+      ],
+      "id": "c1cddb0c-ded4-4c62-b523-866cef30c7c2",
+      "name": "Limpa o diretorio /tmp"
+    },
+    {
+      "parameters": {
+        "command": "=ls /tmp/"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -14640,
+        160
+      ],
+      "id": "5a03934d-d632-4df6-812f-84b3c371c695",
+      "name": "lista"
+    },
+    {
+      "parameters": {
+        "command": "=mkdir -p /tmp/{{ $json.slug }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -14832,
+        160
+      ],
+      "id": "74fc721f-664e-4188-87f9-c20523f7b5de",
+      "name": "Cria o diretório no /tmp se não existir"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/narracao.mp3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -12384,
+        96
+      ],
+      "id": "dba73387-5840-4a66-a294-c8aff1fb4b6a",
+      "name": "Salva áudio no TMP"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/{{ $('Limpa o JSON').item.json.image }}.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -10992,
+        240
+      ],
+      "id": "9c033340-7d37-4673-837d-91e8027781df",
+      "name": "Salva img no /tmp"
+    },
+    {
+      "parameters": {
+        "command": "=ls /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -10144,
+        -112
+      ],
+      "id": "152b7a1c-22ca-41e8-ad74-60d7f4f4912d",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "content": "## 8 - Gera o vídeo sem legenda",
+        "height": 80,
+        "width": 1260,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -10816,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "9863a317-0e12-4ebf-aaa8-78a6bbd3a68a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/narracao.mp3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -8608,
+        704
+      ],
+      "id": "2507862d-67e6-4ab1-b5f1-951e565ec4f8",
+      "name": "Pega a narração"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer gsk_SUA_APIKEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-large-v3"
+            },
+            {
+              "name": "response_format",
+              "value": "verbose_json"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "timestamp_granularities[]",
+              "value": "segment"
+            },
+            {
+              "name": "timestamp_granularities[]",
+              "value": "word"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -8400,
+        704
+      ],
+      "id": "ff707662-c3a4-4474-9e9e-6e1c32e39c80",
+      "name": "transcreve  audio no GROQ"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const narracaoIndex = $itemIndex;\nconst words = $json.words;\n\nif (!Array.isArray(words)) {\n  throw new Error(\"words inválidos\");\n}\n\nfunction dividirPorPalavras(wordsArray) {\n  const blocos = [];\n  let atual = [];\n  let blocoStart = wordsArray.length > 0 ? wordsArray[0].start : 0;\n\n  wordsArray.forEach((wordObj, index) => {\n    atual.push(wordObj.word);\n\n    const ehUltima = index === wordsArray.length - 1;\n    const passouLimite = atual.length >= 7 || ehUltima;\n\n    if (passouLimite) {\n      const blocoTexto = atual.join(' ');\n      const blocoEnd = wordObj.end;\n\n      blocos.push({\n        text: blocoTexto,\n        startTime: blocoStart,\n        endTime: blocoEnd\n      });\n\n      blocoStart = blocoEnd;\n      atual = [];\n    }\n  });\n\n  return blocos;\n}\n\nconst blocosFinal = dividirPorPalavras(words);\n\nreturn {\n  json: {\n    narracaoIndex,\n    blocos: blocosFinal,\n    words\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -8176,
+        704
+      ],
+      "id": "9c22f1c2-3fda-4ca9-87d1-c7539910af45",
+      "name": "Limpa o retorno do GROQ"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "/**\n * Formata segundos para o padrão de tempo do ASS (H:MM:SS.cs).\n */\nfunction formatAssTime(seconds) {\n  const ms = Math.floor((seconds % 1) * 100);\n  const totalSeconds = Math.floor(seconds);\n  const h = String(Math.floor(totalSeconds / 3600)).padStart(1, '0');\n  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');\n  const s = String(totalSeconds % 60).padStart(2, '0');\n  const cs = String(ms).padStart(2, '0');\n  return `${h}:${m}:${s}.${cs}`;\n}\n\n/**\n * Gera o texto de uma linha com tags de duração de karaoke {\\k...}.\n * As cores são herdadas do Estilo definido em gerarAssCompleto.\n */\nfunction gerarKaraokeLinha(wordsSegmentadas, palavrasBloco) {\n  return wordsSegmentadas.map(palavra => {\n    const match = palavrasBloco.find(w =>\n      w.word.replace(/[,.!?;]/g, '').toLowerCase() ===\n      palavra.replace(/[,.!?;]/g, '').toLowerCase()\n    );\n    if (match) {\n      const duracao = Math.round((match.end - match.start) * 100);\n      return `{\\\\k${duracao}}${match.word}`;\n    } else {\n      return palavra;\n    }\n  }).join(' ');\n}\n\n/**\n * Cria uma ou mais linhas de diálogo para um segmento de texto.\n */\nfunction gerarLinhasPorSegmento(bloco, words) {\n  // A função formatAssTime é chamada aqui.\n  const inicio = formatAssTime(bloco.startTime);\n  const fim = formatAssTime(bloco.endTime);\n  \n  const palavrasSegmento = bloco.text.trim().split(/\\s+/);\n  const palavrasBloco = words.filter(w => w.start >= bloco.startTime && w.end <= bloco.endTime);\n\n  const linhaTexto = gerarKaraokeLinha(palavrasSegmento, palavrasBloco);\n  \n  return [`Dialogue: 0,${inicio},${fim},Default,,0,0,0,,${linhaTexto}`];\n}\n\n/**\n * Junta todas as partes e gera o conteúdo completo do arquivo .ass.\n * Define os estilos que controlam as cores do karaoke.\n */\nfunction gerarAssCompleto(blocos, words, index) {\n  const assHeader = `[Script Info]\nTitle: Letra ${String(index).padStart(2, '0')}\nScriptType: v4.00+\nPlayResX: 1280\nPlayResY: 720\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Default,Arial,60,&H0000FFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,2,1,2,30,30,80,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;\n\n  const linhas = blocos.flatMap(bloco => gerarLinhasPorSegmento(bloco, words));\n  return `${assHeader}\\n${linhas.join('\\n')}`;\n}\n\n// === Lógica principal de execução ===\nconst blocos = $json.blocos;\nconst words = $json.words;\nconst musicaIndex = $json.musicaIndex || 1;\n\nconst ass = gerarAssCompleto(blocos, words, musicaIndex);\nconst buffer = Buffer.from(ass, 'utf-8');\n\nreturn {\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: 'text/x-ass',\n      fileName: `legenda_${musicaIndex}.ass`\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7984,
+        704
+      ],
+      "id": "747fa48a-c5ef-4e3a-abe6-fefd71575043",
+      "name": "gera .ass"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/legenda.ass",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -7760,
+        704
+      ],
+      "id": "1962b8da-2f64-4cab-baa4-2384492788d6",
+      "name": "Salva legenda no /tmp"
+    },
+    {
+      "parameters": {
+        "content": "## 9 - Gera legenda .ASS",
+        "height": 80,
+        "width": 1280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -9488,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "b63e852d-e587-4944-ae94-8fbdcee0b74d",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.ffmpeg_command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -9040,
+        704
+      ],
+      "id": "4af4ba28-056c-4557-9129-fe0d100b06aa",
+      "name": "Gera vídeo sem legenda"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -i /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/video_sem_legenda.mp4 -vf \"ass=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/legenda.ass\" -c:a copy -y /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/video_com_legenda.mp4"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -7280,
+        704
+      ],
+      "id": "57868ce7-a1d3-4cc8-b443-7f9bcdb96119",
+      "name": "Gera vídeo com legenda"
+    },
+    {
+      "parameters": {
+        "content": "## 6 - Embute a legenda no vídeo",
+        "height": 80,
+        "width": 480,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -8192,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "f080111e-fee5-436f-891d-1047c62b1e7a",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const duracaoNarracao = parseInt($('NARRACAO').first().json.tempo_s);\nconst duracaoMinimaPorMusica = 150;\n\n// Calcula exatamente quantas músicas são necessárias para cobrir a narração\nconst quantidadeMusicas = Math.ceil(duracaoNarracao / duracaoMinimaPorMusica);\n\nreturn [{\n  json: {\n    quantidade_musicas_para_baixar: quantidadeMusicas\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6800,
+        704
+      ],
+      "id": "6857d059-2d1a-47e3-9c59-5669e53aebcd",
+      "name": "Quantas musicas preciso"
+    },
+    {
+      "parameters": {
+        "jsCode": "function normalizeName(name) {\n  return name.replace(/\\s*\\(\\d+\\)(?=\\.\\w+$)/, '');\n}\n\nconst uniqueMap = new Map();\n\n// Remove duplicados com base no nome normalizado\nfor (const item of items) {\n  const filename = item.json.name || item.json.file || '';\n  const baseName = normalizeName(filename);\n\n  if (!uniqueMap.has(baseName)) {\n    uniqueMap.set(baseName, item);\n  }\n}\n\n// Pega os únicos e embaralha\nconst uniqueItems = Array.from(uniqueMap.values());\nconst shuffled = uniqueItems.sort(() => 0.5 - Math.random());\n\n// Retorna apenas 2 músicas\nreturn shuffled.slice(0, $('Quantas musicas preciso').first().json.quantidade_musicas_para_baixar);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6336,
+        704
+      ],
+      "id": "521a1bf3-cf90-402c-bce9-389197493b21",
+      "name": "Seleciona X de forma aleatória",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/musica{{$itemIndex}}.mp3",
+        "dataPropertyName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -5840,
+        704
+      ],
+      "id": "c6d08482-47c8-4906-8438-dd7a9e228a49",
+      "name": "Salva as músicas"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -6080,
+        704
+      ],
+      "id": "0a5b5eca-4d33-4deb-9d96-12b746b78d5b",
+      "name": "Faz o download da música",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 7- Faz o download das músicas",
+        "height": 80,
+        "width": 1240,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -7696,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "1580a2ae-620f-4acb-92d9-c57c171c7e5c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const diretorio = \"/tmp/\" + $('DIRETÓRIO').first().json.diretorio_slug;\nconst totalMusicas = $('Quantas musicas preciso').first().json.quantidade_musicas_para_baixar;\n\nlet comando;\n\nif (totalMusicas === 1) {\n  const path = `${diretorio}/musica0.mp3`;\n  // Apenas copia o arquivo para manter a mesma saída esperada\n  comando = `cp ${path} ${diretorio}/musica_unida.mp3`;\n} else {\n  let inputs = '';\n  let concatList = '';\n\n  for (let i = 0; i < totalMusicas; i++) {\n    const path = `${diretorio}/musica${i}.mp3`;\n    inputs += `-i ${path} `;\n    concatList += `[${i}:a]`;\n  }\n\n  const filter = `${concatList}concat=n=${totalMusicas}:v=0:a=1[outa]`;\n  comando = `ffmpeg ${inputs}-filter_complex \"${filter}\" -map \"[outa]\" -y ${diretorio}/musica_unida.mp3`;\n}\n\nreturn [{\n  json: {\n    ffmpeg_command: comando\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5488,
+        704
+      ],
+      "id": "536881b5-8f78-4b17-868b-c0a1eed1b427",
+      "name": "Gera comando para unir as músicas"
+    },
+    {
+      "parameters": {
+        "content": "## 8-Une as músicas (se precisar)",
+        "height": 80,
+        "width": 800,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -6416,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "5da5d65d-931a-4fe0-abf6-eaec37544fae",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 10 - Gera música com narração",
+        "height": 80,
+        "width": 1340,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -5120,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "7870a27c-cd6f-4ab7-b90f-f41894daa2e9",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "command": "=ls /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -5008,
+        384
+      ],
+      "id": "2861fdb2-dd77-4db3-80e9-d4ed0634c3a6",
+      "name": "lista o diretório1"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/musica_unida.mp3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -5008,
+        544
+      ],
+      "id": "301f37bb-c43a-424d-99a9-c39aea846dcd",
+      "name": "lê o arquivo gerado"
+    },
+    {
+      "parameters": {
+        "command": "=ffprobe -i /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/video_com_legenda.mp4 -show_entries format=duration -v quiet -of csv=\"p=0\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -4240,
+        704
+      ],
+      "id": "10ddfcfa-8e16-446c-a663-e73f7d51638a",
+      "name": "Pega o tamanho do vídeo com legenda"
+    },
+    {
+      "parameters": {
+        "command": "=ffprobe -i /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/musica_unida_baixa.mp3 -show_entries format=duration -v quiet -of csv=\"p=0\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -4048,
+        704
+      ],
+      "id": "1e4457e0-7018-4b0f-aabb-8c07b6e9cfb8",
+      "name": "Pega o tamanho da música unida"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -i /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/musica_unida.mp3 -filter:a \"volume=0.5\" -y /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/musica_unida_baixa.mp3"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -4576,
+        704
+      ],
+      "id": "6fe16c61-5ad8-4e83-86e5-2107c5beabb5",
+      "name": "Abaixa o volume da música"
+    },
+    {
+      "parameters": {
+        "jsCode": "const diretorio = \"/tmp/\"+$('DIRETÓRIO').first().json.diretorio_slug;\n\nconst narracao = `${diretorio}/narracao.mp3`;\nconst musica = `${diretorio}/musica_unida_baixa.mp3`;\nconst output = `${diretorio}/audio_mixado_final.mp3`;\n\nconst comando = `ffmpeg \\\n-i \"${narracao}\" \\\n-i \"${musica}\" \\\n-filter_complex \"[0:a][1:a]amix=inputs=2:duration=first[aout]\" \\\n-map \"[aout]\" \\\n-c:a libmp3lame -q:a 2 -y \"${output}\"`;\n\nreturn [{\n  json: {\n    ffmpeg_command: comando\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3568,
+        704
+      ],
+      "id": "8538e875-944f-44af-8d0a-b8c51c39d2cd",
+      "name": "comando para unir música com narração"
+    },
+    {
+      "parameters": {
+        "command": "=ffprobe -i /tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/narracao.mp3 -show_entries format=duration -v quiet -of csv=\"p=0\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -9856,
+        496
+      ],
+      "id": "8fa50d13-21b5-4601-93f9-94b9fabb1921",
+      "name": "Pega o tamanho da narração mp3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const seconds = parseFloat($input.first().json.stdout);\nconst rounded = Math.round(seconds);\n\nreturn [{ duracao_em_segundos: rounded }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -9648,
+        704
+      ],
+      "id": "b330c0b6-7648-448a-9521-93783469bb47",
+      "name": "Configura o tamanho da narração"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/video_final_completo.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -2320,
+        496
+      ],
+      "id": "2d129ea4-bb0f-4ed6-b7ca-eab0b82fe072",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "content": "##  11 - Gera o vídeo final",
+        "height": 80,
+        "width": 960,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3728,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "cb01520f-3b90-4d48-ad3a-2dc0aec83c5a",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "name": "=",
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_id\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2128,
+        496
+      ],
+      "id": "8b61755f-6f91-4647-9f59-ef78679dbd82",
+      "name": "Upload do vídeo final",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -17616,
+        512
+      ],
+      "id": "e7f875f1-0bae-44c6-8bca-2a0c3dc1ba21",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "content": "## 02 - Criação do roteiro",
+        "height": 80,
+        "width": 1240,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -17008,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "aeb31292-65a5-49e6-81c7-c41064bbcb52",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## 06 - Gera o áudio da narração",
+        "height": 80,
+        "width": 500,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -13136,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "cab0be6f-e89c-435b-85bf-5c10155acca1",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## 07 - Gera as imagens",
+        "height": 80,
+        "width": 1720,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -12576,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "b68bb9a6-46ae-4f17-a64e-4e88eb4ca5ea",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "content": "## 12 Publica o vídeo no Youtube",
+        "height": 80,
+        "width": 1300,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2720,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "dd8d7088-1138-4645-9775-78d81dc9eeab",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        816,
+        640
+      ],
+      "id": "b7b21716-d8fb-43d5-b1d0-b57dafb19913",
+      "name": "Wait",
+      "webhookId": "ab0280db-870b-444c-94dd-3c7a673f7dd5"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Gera thumbnail').item.json.urls.get }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization\t",
+              "value": "Bearer SUA_APIKEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        992,
+        640
+      ],
+      "id": "1874bc4b-487d-4d5d-bfb9-12c05ebc54f6",
+      "name": "Pega status da imagem1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "=succeeded",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "44d1de9b-5254-44c0-b8b7-190a1221561b"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "454c3820-7e0a-4bf2-bd41-4408651ad5f6",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "160cb03c-dc45-4a89-add6-11299c60bb59",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "canceled",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "353ba927-d5f5-4308-9427-9583d62f2688",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "starting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "25044cfc-1c72-450a-8302-fc06b6210c56",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "processing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        112,
+        560
+      ],
+      "id": "db46b917-1991-49a5-9eae-5051d810f4ae",
+      "name": "Switch"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        480
+      ],
+      "id": "b8668187-f07e-4b29-955f-3e526e483f22",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        640
+      ],
+      "id": "7e4b8601-ba4a-4814-b885-8216395104c5",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.output[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        304
+      ],
+      "id": "5ca05e22-14ce-48db-9fb0-cd1f747e07ab",
+      "name": "Baixa a imagem"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        848,
+        -32
+      ],
+      "id": "177eb0aa-39b9-4003-bf9f-1142035143a2",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "content": "##  11 - Gera a thumbnail",
+        "height": 80,
+        "width": 3260,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1360,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "6085ca5a-959b-4ad7-bc8a-8944e13476d9",
+      "name": "Sticky Note14"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/thumbnail_final.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2224,
+        -48
+      ],
+      "id": "ccb44ece-6d24-40c3-b9af-c0aae30e1af8",
+      "name": "pega nova thumb1"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "=1C5xI5mzAVRKsKupgRvvOqrjvGlvl3KNv",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1392,
+        -48
+      ],
+      "id": "b7987604-d11b-4f27-b8c0-c642c5131f3b",
+      "name": "Faz o download da fonte ttf",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/montserrat-black.ttf",
+        "dataPropertyName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -48
+      ],
+      "id": "8fb8c7dc-1b9d-4d8d-9082-682cd9483ee5",
+      "name": "Salva a fonte"
+    },
+    {
+      "parameters": {
+        "content": "## 01 - Configurações",
+        "height": 80,
+        "width": 460
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -17488,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "ac0084db-a026-41d2-91d3-68adf07795fb",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"Título\": \"ASSOMBRAÇÃO ALIEN: O MISTÉRIO DO FAROL NA ILHA DO MEL...\",\n  \"Descrição\": \"Você acredita em vida extraterrestre? Esta é uma história real de um encontro arrepiante que transformou a Ilha do Mel em um palco de puro terror. Testemunhas ficaram sem palavras diante do inexplicável. Este realmente aconteceu... Prepare-se para o mistério e a assombração que vem do desconhecido. Inscreva-se para mais histórias aterrorizantes!\",\n  \"Tags\": \"alien, ufo, terror, mistério, assombração, horror, extraterrestre, suspense, ilha do mel\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -15520,
+        752
+      ],
+      "id": "3a55b8a3-9a9b-46dc-854c-f06e89547154",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "content": "## 03 - Dados para publicação",
+        "height": 80,
+        "width": 540,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -15728,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "fe33c50b-60e8-405d-a516-c0dc7c850299",
+      "name": "Sticky Note15"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create a cosmic horror story based on an alien encounter.\n\nIMPORTANT:\n- Do not exceed 2300 characters.",
+        "options": {
+          "systemMessage": "=You are a master storyteller specializing in cosmic horror and extraterrestrial encounters. Your stories blend psychological terror with otherworldly phenomena, creating narratives that disturb and captivate readers through atmospheric tension rather than explicit violence.\n\nIMPORTANT:\nAll your responses must be written in fluent {{ $json.g_idioma }}, with natural, fluent language and rich in {{ $json.g_idioma }} idiomatic expressions.\nYour response must be exactly between 2300 and 2400 characters. The character count must be followed strictly. Do not exceed 2400 characters and do not fall below 2300 characters. Keep the narrative concise yet impactful. Do not include the character count in your response.\n\nSTRUCTURE:\n\nAtmospheric Opening: Create an introduction with a sense of something wrong in the environment.\n\nCreeping Revelation: Gradually introduce alien or supernatural elements with indirect signs.\n\nPsychological Escalation: Focus on the deterioration of the protagonist's mental state and growing paranoia.\n\nCosmic Confrontation: Reveal the extraterrestrial presence in a way that challenges human understanding.\n\nAmbiguous Resolution: End with an uncertain or disturbing resolution, leaving a sense of unease.\n\nTONE:\nThe narrative should be cerebral, atmospheric, and deeply unsettling. Think of something like Lovecraft, mixed with modern psychological sci-fi thriller.\n\nIMPORTANT:\nYour response should be approximately 2300 characters. It must never exceed this limit under any circumstances. Stay close to this count, and do not write anything outside the story itself — no explanations or character count.\n\nResponses exceeding or below the limit will be considered invalid."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -16976,
+        512
+      ],
+      "id": "f1b3744c-568e-40b8-b304-1072a6d73705",
+      "name": "Agente Roteiro"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate YouTube metadata optimized for SEO and engagement, based on the following extraterrestrial horror story:\n{{ $json.roteiro }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a YouTube expert specializing in organic growth, SEO, and viral extraterrestrial horror and suspense videos. Your mission is to create highly optimized metadata based on an extraterrestrial horror story provided, always respecting platform guidelines.\n\nAll content must be written in fluent {{ $('SETUP').item.json.g_idioma }}.\n\nYour delivery must contain:\n\n1. **Title (title)**:\n   - Completely in UPPERCASE\n   - Maximum 60 characters (including spaces)\n   - Must contain high emotional impact words related to terror/suspense\n   - Include elements like: ALIEN, UFO, TERROR, MYSTERY, HAUNTING\n   - End with \"...\" to generate curiosity and suspense\n\n2. **Description (description)**:\n   - 2 to 4 lines\n   - Must mention it's a real story/based on facts about extraterrestrial encounter\n   - Create atmosphere of mystery and terror\n   - May include an invitation to subscribe for more scary stories\n   - Use phrases like \"Do you believe in extraterrestrial life?\" or \"This really happened...\"\n\n3. **Tags (tags)**:\n   - Output must be a **single string** with the tags, not an array\n   - Format: `\"alien, ufo, terror, mystery, haunting\"`\n   - Use 5 to 10 short and direct keywords related to extraterrestrial horror\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -15680,
+        544
+      ],
+      "id": "84d4bdcb-2bcf-466b-a6b6-23452c3f4048",
+      "name": "Agente Publicação"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3fe039dc-63d5-470c-adcb-ea077c219207",
+              "name": "roteiro",
+              "value": "={{ $json.roteiro }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -15888,
+        544
+      ],
+      "id": "ff795eac-e5fe-4c59-80db-62d8b221ddb1",
+      "name": "ROTEIRO"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "491dbc33-e2f5-49a3-9da1-bd0e04625a5f",
+              "name": "id",
+              "value": "={{ $execution.id }}",
+              "type": "string"
+            },
+            {
+              "id": "2d641135-253a-4097-a25e-a8e15210ad7a",
+              "name": "g_hoje",
+              "value": "={{ new Date().toISOString().split('T')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "2d7f751e-0fdd-43ec-8fd3-8e32feaa74f0",
+              "name": "g_qtdimagens",
+              "value": "10",
+              "type": "string"
+            },
+            {
+              "id": "2b968547-24e5-4736-b8c5-1df10b0b97db",
+              "name": "g_googledrive_dir",
+              "value": "1e6GeZOKd1a0alpLEVUYqDy5ZW88inX7-",
+              "type": "string"
+            },
+            {
+              "id": "061cb702-3449-4a6e-b51f-34df1a31eec2",
+              "name": "g_googledrive_planilha",
+              "value": "1n4eblBLNn5bWgSManZraDvdLuudEGn2bVcVQzWwABSo",
+              "type": "string"
+            },
+            {
+              "id": "2c59d597-218f-452a-a6df-d7090b33a897",
+              "name": "g_idioma",
+              "value": "portuguese",
+              "type": "string"
+            },
+            {
+              "id": "1470f078-663a-472d-96ad-0fabb5b6c051",
+              "name": "g_musicas_dir",
+              "value": "1rsDSoFHCF3kiHazF__p-08bvNt29ZBXZ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -17216,
+        512
+      ],
+      "id": "d8bb4665-3dd3-4e4f-81f7-df6363a87998",
+      "name": "SETUP"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "197db042-4d25-49f5-9c45-bbe551993891",
+              "name": "title",
+              "value": "={{ $json.output.title }}",
+              "type": "string"
+            },
+            {
+              "id": "e08db3e5-0f4d-43d4-b4fc-6500c1be85d6",
+              "name": "description",
+              "value": "={{ $json.output.description }}",
+              "type": "string"
+            },
+            {
+              "id": "41643ae7-683c-4c1c-b472-3ae28205c409",
+              "name": "tags",
+              "value": "={{ $json.output.tags }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -15328,
+        544
+      ],
+      "id": "746b5963-5764-40c5-ad46-98d083fbe8fc",
+      "name": "PUBLICAÇÃO"
+    },
+    {
+      "parameters": {
+        "content": "## 04 - Cria e configura dados do diretório",
+        "height": 80,
+        "width": 920,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -15152,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "2bbbd844-e6c6-4517-9b55-79c828a17722",
+      "name": "Sticky Note16"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  let titulo = $input.first().json.title || '';\n\n  // 1. Convert to lowercase\n  titulo = titulo.toLowerCase();\n\n  // 2. Remove accents\n  titulo = titulo.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\");\n\n  // 3. Remove special characters\n  titulo = titulo.replace(/[^a-z0-9\\s-]/g, \"\");\n\n  // 4. Replace spaces and multiple spaces with hyphens\n  titulo = titulo.replace(/\\s+/g, '-');\n\n  // 5. Remove duplicate or edge hyphens\n  titulo = titulo.replace(/-+/g, '-').replace(/^-+|-+$/g, '');\n\n  // Return with the new `slug` or `folder` field\n  return {\n    json: {\n      slug: titulo,\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -15120,
+        544
+      ],
+      "id": "1a9962f7-1704-4085-ab23-58939e1f8bea",
+      "name": "Gera a slug do diretório"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        -14592,
+        512
+      ],
+      "id": "273b3bbb-4171-4a00-9768-a87b8bfebb4a",
+      "name": "Combina",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "15d44eca-f9c9-41a0-849d-441bd5a9303f",
+              "name": "diretorio_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "d60bd2a4-5605-4a35-b143-a17d2739d45a",
+              "name": "diretorio_slug",
+              "value": "={{ $json.slug }}",
+              "type": "string"
+            },
+            {
+              "id": "09a12b07-48c4-4270-b719-4e90c5a84be1",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -14368,
+        512
+      ],
+      "id": "b42f4c79-f5c0-4b8f-ac60-5925ba86408e",
+      "name": "DIRETÓRIO",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "content": "## 05 - Salva o que gerou",
+        "height": 80,
+        "width": 620,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -14192,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "adf9ed03-dad7-4288-8e19-0a04094b958d",
+      "name": "Sticky Note17"
+    },
+    {
+      "parameters": {
+        "name": "dados_para_upload.txt",
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_id\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -13728,
+        16
+      ],
+      "id": "d177bee2-5985-4a0b-8311-e9d170eb539d",
+      "name": "Salva no GDrive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Dados de publicação no google drive",
+        "height": 200,
+        "width": 540,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -14128,
+        -32
+      ],
+      "typeVersion": 1,
+      "id": "6ea95aab-df03-4771-8df0-b687b1876681",
+      "name": "Sticky Note18"
+    },
+    {
+      "parameters": {
+        "content": "Salva roteiro no /tmp e GDrive",
+        "height": 460,
+        "width": 540,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -14128,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "eb60c6de-49be-4daf-9b69-8d3a78a16adf",
+      "name": "Sticky Note19"
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_id\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -13776,
+        432
+      ],
+      "id": "3dc4d8bc-1795-4d99-9ed7-d81feb29176e",
+      "name": "Salva roteiro",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{ $('Gera a slug do diretório').item.json.slug }}/roteiro.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -13776,
+        272
+      ],
+      "id": "426d5bcf-8aed-4011-b895-1030859d5228",
+      "name": "Salva roteiro1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const titulo = $('PUBLICAÇÃO').first().json.title;\nconst descricao = $('PUBLICAÇÃO').first().json.description;\nconst tags = $('PUBLICAÇÃO').first().json.tags;\n\n// Formata o conteúdo do arquivo\nconst conteudo = \n`TÍTULO:\n${titulo}\n\nDESCRIÇÃO:\n${descricao}\n\nTAGS:\n${tags}\n\n`;\n\nconst safeFileName = titulo\n  .toLowerCase()\n  .normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\")\n  .replace(/[^a-z0-9\\s-]/g, \"\")\n  .replace(/\\s+/g, '-')\n  .replace(/-+/g, '-')\n  .replace(/^-+|-+$/g, '');\n\nconst buffer = Buffer.from(conteudo, 'utf-8');\n\nreturn [\n  {\n    json: {},\n    binary: {\n      data: {\n        data: buffer.toString('base64'),\n        fileName: `dados_de_publicacao.txt`,\n        mimeType: 'text/plain'\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13952,
+        16
+      ],
+      "id": "7c296456-b2b8-4019-b36e-78ffd73da501",
+      "name": "Monta o TXT em base64"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tituloBruto = $input.first().json.diretorio_slug || \"Sem título\";\nconst titulo = tituloBruto.replace(/\\.\\.\\.$/, '');\n\nconst roteiro = $('ROTEIRO').first().json.roteiro || \"Sem conteúdo\";\n\nconst safeFileName = titulo.replace(/[\\/\\\\?%*:|\"<>]/g, '-');\nconst buffer = Buffer.from(roteiro, 'utf-8');\n\nreturn [\n  {\n    binary: {\n      data: {\n        data: buffer.toString('base64'),\n        mimeType: 'text/plain',\n        fileName: `roteiro.txt`\n      }\n    },\n    json: {}\n  }\n];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14080,
+        544
+      ],
+      "id": "1cfa572b-b089-4e35-bb28-ace6fb3723a5",
+      "name": "Gera roteiro em base64"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Rewrite the text below while maintaining its style, structure, and impact, but reduce the total character count to strictly between 2300 and 2400 characters.\nDo not remove essential elements — only adjust phrases and wording naturally to shorten the text.\nReturn only the final version of the story.\n\nDo not exceed 2400 characters.\nOriginal text:\n{{ $json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -16432,
+        256
+      ],
+      "id": "d6e5f3a3-7f95-4fef-9a65-ed271f36be0f",
+      "name": "Ajusta caracteres"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0a7717c7-78d4-4fc3-a875-d0d5c8f6af6c",
+              "leftValue": "={{ $json.output.length }}",
+              "rightValue": 2500,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -16656,
+        512
+      ],
+      "id": "c39cbfc9-575e-47b9-b68a-dcfcf637acdb",
+      "name": "Verifica qtd caracteres"
+    },
+    {
+      "parameters": {
+        "content": "## 05 - Atualiza a planilha",
+        "height": 80,
+        "width": 360,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -13536,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "78eaf6d8-b542-40be-b236-d790806bea9a",
+      "name": "Sticky Note20"
+    },
+    {
+      "parameters": {
+        "name": "=narracao.mp3",
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_id\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -12384,
+        320
+      ],
+      "id": "d3c1783c-ebb2-4129-8fea-6063fb899dba",
+      "name": "Salva áudio",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Limpa o JSON').item.json.image }}.jpg",
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_id\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -11008,
+        384
+      ],
+      "id": "d82e4b13-2c0f-4b9c-b6bb-0df199d49e8a",
+      "name": "Salva no GDrive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -10432,
+        432
+      ],
+      "id": "756383a1-f086-4bc8-b639-5bbb37d6966f",
+      "name": "aguarda",
+      "webhookId": "8b8edfe0-09ae-4d38-bebc-db36a711a8c1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const diretorio = \"/tmp/\" + $('DIRETÓRIO').first().json.diretorio_slug;\nconst totalImagens = Number($('SETUP').first().json.g_qtdimagens);\nconst duracaoAudio = Number($input.first().json.tempo_s);\n\nconst tempoPorImagem = Math.ceil((duracaoAudio / totalImagens) * 100) / 100;\n\nlet inputArgs = '';\nlet filtros = '';\nlet concat = '';\n\nfor (let i = 0; i < totalImagens; i++) {\n  const index = i + 1;\n  inputArgs += `-loop 1 -t ${tempoPorImagem} -i ${diretorio}/image_${index}.jpg \\\\\\n`;\n\n  const fadeIn = i === 0 ? '' : `fade=t=in:st=0:d=0.5,`;\n\n  let fadeOut = '';\n  if (i < totalImagens - 1 && tempoPorImagem > 0.5) {\n    const st = Math.max(0, parseFloat((tempoPorImagem - 0.5).toFixed(2)));\n    fadeOut = `fade=t=out:st=${st}:d=0.5,`;\n  }\n\n  filtros += `[${i}:v]${fadeIn}${fadeOut}setpts=PTS-STARTPTS[v${i}];\\n`;\n  concat += `[v${i}]`;\n}\n\nconst filterComplex = `${filtros}${concat}concat=n=${totalImagens}:v=1:a=0[outv]`;\n\nconst comando = `ffmpeg \\\\\n${inputArgs} \\\\\n-filter_complex \"${filterComplex}\" \\\\\n-map \"[outv]\" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -y ${diretorio}/video_sem_legenda.mp4`;\n\nreturn [{\n  json: {\n    ffmpeg_command: comando\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -9248,
+        704
+      ],
+      "id": "2e03a1fe-2a77-4be7-a992-2c39bebd9af5",
+      "name": "Gera comando ffmpeg"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/video_sem_legenda.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -8816,
+        512
+      ],
+      "id": "dc010e03-e4c9-4f9d-80dc-ce3ce69b218c",
+      "name": "Lê o vídeo"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/video_com_legenda.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -7056,
+        512
+      ],
+      "id": "c2a53433-64d7-42a1-842e-57c57d674f16",
+      "name": "Lê o vídeo com legenda"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "=mimeType = 'audio/mpeg' and '{{ $('SETUP').item.json.g_musicas_dir }}' in parents and trashed = false",
+        "filter": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -6560,
+        704
+      ],
+      "id": "03293b1d-3e35-4b13-a2fe-7d36b16b8ea3",
+      "name": "Busca músicas no drive",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "13446a55-0040-45ad-bf44-3691eb2dfe9d",
+              "name": "tempo_s",
+              "value": "={{ $json.duracao_em_segundos }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -9440,
+        704
+      ],
+      "id": "cf399bae-cc05-41f8-be83-caf9d97325e0",
+      "name": "NARRACAO"
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.ffmpeg_command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -5280,
+        704
+      ],
+      "id": "694f79d5-f101-4cff-96e6-5e211c87876c",
+      "name": "Executa o comando"
+    },
+    {
+      "parameters": {
+        "content": "## 9 - Diminui o volume da música\n\nvolume=1.0 → volume original (100%)\n\nvolume=0.5 → metade do volume\n\nvolume=2.0 → dobro do volume",
+        "height": 180,
+        "width": 420,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -5568,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "164a8006-bb14-42bc-a05f-cbab16b4d2c2",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c80aff52-7be6-4a9d-9c0a-71dae422b30f",
+              "name": "=duracao_video_com_legenda_em_segundos",
+              "value": "={{ Math.round($item(\"0\").$node[\"Pega o tamanho do vídeo com legenda\"].json[\"stdout\"]) }}",
+              "type": "number"
+            },
+            {
+              "id": "f510669d-4419-48ba-870b-b66764464df7",
+              "name": "duracao_musica_unida_em_segundos",
+              "value": "={{ Math.round($item(\"0\").$node[\"Pega o tamanho da música unida\"].json[\"stdout\"]) }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3824,
+        704
+      ],
+      "id": "241ea011-31a2-4ba3-aeae-b4ef4036d8b8",
+      "name": "TEMPO VIDEO E MUSICA"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/audio_mixado_final.mp3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -3120,
+        496
+      ],
+      "id": "55233780-2e7d-4d40-8965-55d1555221d3",
+      "name": "lê o arquivo gerado1"
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.ffmpeg_command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -3344,
+        704
+      ],
+      "id": "5ae35658-4f9f-4c1f-8b5d-9ff0cf5817a4",
+      "name": "Gera áudio mixado final"
+    },
+    {
+      "parameters": {
+        "jsCode": "const diretorio = \"/tmp/\" + $('DIRETÓRIO').first().json.diretorio_slug;\n\nconst videoLegenda = `${diretorio}/video_com_legenda.mp4`;\nconst audioFinal = `${diretorio}/audio_mixado_final.mp3`;\nconst saidaFinal = `${diretorio}/video_final_completo.mp4`;\n\nconst comando = `ffmpeg \\\n-i \"${videoLegenda}\" \\\n-i \"${audioFinal}\" \\\n-c:v copy \\\n-c:a aac \\\n-shortest \\\n-y \"${saidaFinal}\"`;\n\nreturn [{\n  json: {\n    ffmpeg_command: comando\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2784,
+        704
+      ],
+      "id": "59ce4ef8-fe56-40f3-8508-8e131b396234",
+      "name": "Gera comando para criar o vídeo completo"
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.ffmpeg_command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -2544,
+        704
+      ],
+      "id": "7bc4800d-8d7b-4168-96fb-ad45e3f027ab",
+      "name": "Gera o vídeo"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"snippet\": {\n    \"title\": \"{{ $json.titulo }}\",\n    \"description\": \"{{ $json.descricao }}\",\n    \"categoryId\": \"22\"\n  },\n  \"status\": {\n    \"privacyStatus\": \"public\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1536,
+        704
+      ],
+      "id": "bb638582-5add-44c5-a9da-f89e700abd23",
+      "name": "JSON PUBLICACAO"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/video_final_completo.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        704
+      ],
+      "id": "127ef060-eecf-462f-b1ad-1967e4205299",
+      "name": "Lê vídeo final"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "snippet",
+              "value": "={{ $json.snippet }}"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.status }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1296,
+        704
+      ],
+      "id": "7d27db61-e15e-4a96-8cac-22637b5d76be",
+      "name": "YOUTUBE - Solicitação de sessão de upload"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $item(\"0\").$node[\"YOUTUBE - Solicitação de sessão de upload\"].json[\"headers\"][\"location\"] }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -784,
+        704
+      ],
+      "id": "7d13aa3d-35e0-40b1-b0c0-340260fb8dab",
+      "name": "Youtube - Envio do binário"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        576
+      ],
+      "id": "c5e02883-49c4-4797-83ad-363e2fb64fbf",
+      "name": "OpenAI Chat Model3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a thumbnail image prompt based on the following psychological cosmic horror story:\n\n{{ $item(\"0\").$node[\"Remove caracteres especiais\"].json[\"roteiro\"] }}\n\nThe thumbnail must be eerie, mysterious, and visually stunning. Include no text in the image. Return a JSON with a prompt for image generation and a short, gripping phrase for overlay text.",
+        "options": {
+          "systemMessage": "=You are a professional AI visual artist specialized in designing cinematic, high-impact YouTube thumbnails for horror and sci-fi videos. Your goal is to generate visually compelling and mysterious prompts for image generation tools, based on story synopses provided by the user. The images must evoke curiosity, fear, or fascination, and reflect key moments, themes, or emotional beats from the story. Do not include any text in the image prompt itself. Also return a short, suspenseful phrase in {{ $item(\"0\").$node[\"SETUP\"].json[\"g_idioma\"] }} that could be used as an overlay text on the thumbnail to entice viewers to click.\n\nThe response must be a valid JSON in the format below:\n\n{\n  \"prompt\": \"A lone man standing in a dark observatory, staring up at a cosmic sky where stars form a grotesque, glowing alien face. The atmosphere is foggy, with unnatural greenish-blue tones. The town behind him is quiet and empty. The sky is distorted, with swirling constellations and strange celestial shadows. Cinematic horror lighting, photographic realism, unsettling sci-fi surrealism, cosmic dread.\",\n  \"texto\": \"They’re watching us from the stars...\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -320,
+        256
+      ],
+      "id": "bf2a1bf0-b581-48d2-be90-9f967dfcf1fc",
+      "name": "Agente Thumbnail"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prompt = $input.first().json.prompt;\n\nreturn [\n  {\n    json: {\n      input: {\n        prompt: JSON.stringify(prompt),\n        go_fast: true,\n        megapixels: \"1\",\n        num_outputs: 1,\n        aspect_ratio: \"16:9\",\n        output_format: \"jpg\",\n        output_quality: 80,\n        num_inference_steps: 4,\n      }\n    }\n  }\n]\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        176
+      ],
+      "id": "9ad35290-f98a-4467-a410-f61a6fdde5be",
+      "name": "JSON IMAGEM"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer r8_SUA_APIKEY"
+            },
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        304
+      ],
+      "id": "148e718f-90ee-4818-babf-7280b739d614",
+      "name": "Gera thumbnail",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const corrigido = items.map(item => {\n  const corrigidoJSON = JSON.parse(item.json.output);\n  return corrigidoJSON;\n});\n\nreturn corrigido;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        160
+      ],
+      "id": "3600fdbc-8d1a-4a82-af51-bd61fc590e0a",
+      "name": "Faz o parser"
+    },
+    {
+      "parameters": {
+        "name": "=thumbnail.jpg",
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_id\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        -288
+      ],
+      "id": "6337c153-a7a1-47f5-9066-72a882ec0377",
+      "name": "Salva Gdrive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/{{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_slug\"] }}/thumbnail.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -48
+      ],
+      "id": "0f38d5ff-a68b-4a9e-8291-fc24c11f3c4f",
+      "name": "Salva no /tmp"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Função que quebra o texto em linhas sem cortar palavras\nfunction quebrarTextoEmLinhas(texto, maxPorLinha) {\n  const palavras = texto.split(' ');\n  const linhas = [];\n  let linhaAtual = '';\n\n  for (const palavra of palavras) {\n    if ((linhaAtual + ' ' + palavra).trim().length > maxPorLinha) {\n      linhas.push(linhaAtual.trim());\n      linhaAtual = palavra;\n    } else {\n      linhaAtual += ' ' + palavra;\n    }\n  }\n\n  if (linhaAtual) {\n    linhas.push(linhaAtual.trim());\n  }\n\n  return linhas;\n}\n\nconst slug = $('DIRETÓRIO').first().json.diretorio_slug;\nconst textoTitulo = $('Faz o parser').first().json.texto;\n\nconst linhas = quebrarTextoEmLinhas(textoTitulo, 22);\nconst fonte = \"/tmp/montserrat-black.ttf\";\n\nconst imagemEntrada = `/tmp/${slug}/thumbnail.jpg`;\nconst imagemSaida = `/tmp/${slug}/thumbnail_final.jpg`;\n\n// Altura base\nconst fontSize = textoTitulo.length > 50 ? 70 : 90;\nconst espacamento = Math.round(fontSize * 1.4); // 1.4x o tamanho da fonte\nconst alturaInicial = 400 - ((linhas.length - 1) * espacamento) / 2;\n\n// Monta todos os filtros drawtext para cada linha\nconst filtrosDrawtext = linhas.map((linha, i) => {\n  const texto = linha.replace(/'/g, \"\\\\'\").replace(/:/g, '\\\\:');\n  const y = alturaInicial + i * espacamento;\n\n  // Linha 2 (índice 1) em vermelho, as demais em amarelo\n  const cor = i === 1 ? '#FF0000' : '#FFFF00';\n\n  return `drawtext=text='${texto}':fontfile='${fonte}':fontcolor=${cor}:fontsize=${fontSize}:shadowcolor=black:shadowx=2:shadowy=2:x=(w-text_w)/2:y=${y}`;\n}).join(',');\n\n// Comando final\nconst comando = `ffmpeg -i \"${imagemEntrada}\" -vf \"${filtrosDrawtext}\" -y \"${imagemSaida}\"`;\n\nreturn [{\n  json: {\n    ffmpeg_command: comando\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        -48
+      ],
+      "id": "5610cbec-6ec5-45bd-83c5-6c99ec2dbd9a",
+      "name": "Texto para thumb"
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.ffmpeg_command }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        -48
+      ],
+      "id": "d795f456-e910-4382-bd26-312039242d8a",
+      "name": "Adiciona texto na imagem"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/thumbnails/set",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "videoId",
+              "value": "={{ $('Youtube - Envio do binário').item.json.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2512,
+        -48
+      ],
+      "id": "40553416-1bc8-4eae-886b-07c0658625c1",
+      "name": "Atualiza no Youtube"
+    },
+    {
+      "parameters": {
+        "name": "=thumbnail_final.jpg",
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"DIRETÓRIO\"].json[\"diretorio_id\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2512,
+        -288
+      ],
+      "id": "99c8e231-6747-4b11-ae6f-3bb30c981b07",
+      "name": "Salva nova thumb no gdrive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2800,
+        -48
+      ],
+      "id": "0719f819-c3e2-474c-b219-2de7638a907e",
+      "name": "ACABOU"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -17616,
+        336
+      ],
+      "id": "88081f2f-e99b-4cc0-8f2e-ec2137a9ee30",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -17120,
+        720
+      ],
+      "id": "9969bf17-33bf-48fc-8313-515e1153002b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ydDNtq2d9IHYMbTY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -16432,
+        416
+      ],
+      "id": "2209288a-390c-4085-9fb6-a451c3722bd6",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ydDNtq2d9IHYMbTY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -15824,
+        752
+      ],
+      "id": "954305ca-28de-4dfd-9b8b-a47aea2a1570",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ydDNtq2d9IHYMbTY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $json.slug }}",
+        "driveId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"SETUP\"].json[\"g_googledrive_dir\"] }}",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -14832,
+        384
+      ],
+      "id": "477eb11c-2b7a-426b-9bd4-9c4463cb8616",
+      "name": "Create folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "JZ0icV0gb9tzBuXF",
+          "name": "Aporttec"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"SETUP\"].json[\"g_googledrive_planilha\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "videos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wEO-DdbWQX31qwsX7CZb3QDNHqdndCq35nkjTiDcBWE/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "id",
+              "lookupValue": "={{ $item(\"0\").$node[\"SETUP\"].json[\"id\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1808,
+        704
+      ],
+      "id": "9f30a8b2-219d-48bd-83a0-75c6f657ee5c",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "216zHn6ayATAPd7j",
+          "name": "Aporttec Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1JzKE390qFc1X8XSpVaroH-G7iB5s3kgvbIHfWjh4VTI",
+          "mode": "list",
+          "cachedResultName": "Videos youtube",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JzKE390qFc1X8XSpVaroH-G7iB5s3kgvbIHfWjh4VTI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Folha1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1JzKE390qFc1X8XSpVaroH-G7iB5s3kgvbIHfWjh4VTI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "slug": "={{ $('DIRETÓRIO').item.json.diretorio_slug }}",
+            "titulo": "={{ $('PUBLICAÇÃO').item.json.title }}",
+            "descricao": "={{ $('PUBLICAÇÃO').item.json.description }}",
+            "tags": "={{ $('PUBLICAÇÃO').item.json.tags }}",
+            "id": "={{ $('SETUP').item.json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "slug",
+              "displayName": "slug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "descricao",
+              "displayName": "descricao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -13456,
+        544
+      ],
+      "id": "15de6c1a-780e-4cec-97ba-f552ec23c28b",
+      "name": "Atualiza planilha1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UsaaGdySsziOinSo",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-1.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-1.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an expert visual artist specialized in generating realistic, atmospheric extraterrestrial horror illustrations from narrative scripts. Your job is to extract visual prompts from horror story scripts, creating vivid, disturbing, and cinematically impactful scenes that capture the essence of alien encounters and cosmic terror.\n\nVISUAL STYLE:\nPhotographic realism with supernatural and surreal extraterrestrial elements\n\nGloomy, overcast lighting with soft, diffused shadows\n\nFoggy, misty, or cloudy atmosphere with washed-out colors to create mystery and unease\n\nDesaturated color palette: cold grays, muted blues, pale greens, silvery tones\n\nDisturbingly calm water surfaces, murky reflections, and eerie stillness\n\nDetailed and hyper-realistic textures, with painterly and cinematic composition\n\nEXTRATERRESTRIAL ELEMENTS:\nAlien beings with bizarre and grotesquely humanoid smiles, oversized black or glossy eyes\n\nElongated heads or necks, emerging partially from water or fog\n\nNon-human anatomy with distorted proportions, but mockingly human features (like unnatural grins)\n\nFixed, uncanny expressions that create psychological discomfort\n\nPresence of multiple entities, giving the sense of encroaching invasion\n\nNo visible technology required — horror emanates from presence and form\n\nCOMPOSITION RULES:\nCreatures should be arranged in eerie symmetry or scattered in unnatural positions\n\nLeave space for potential text overlay, especially near upper or lower thirds\n\nScenes must evoke isolation and intrusion at once\n\nDepth and perspective should immerse the viewer into the unsettling environment\n\nUse of water bodies, lakesides, or foggy landscapes to enhance narrative depth\n\nHORROR TECHNIQUES:\nUncanny valley effect with human-like but clearly unnatural traits\n\nStillness and symmetry to evoke unease\n\nJuxtaposition of tranquil environments with grotesque alien appearances\n\nFocus on disturbing contrasts: childlike smiles with predatory undertones\n\nSlight environmental distortions: unnatural reflections, warped vegetation, or impossible mist shapes\n\nLIGHTING AND ATMOSPHERE:\nSoft but chilling ambient lighting typical of overcast or post-rainfall skies\n\nMist and haze as compositional layers to obscure and reveal selectively\n\nCreepy silhouettes partially emerging from fog or water\n\nUse of unnatural cold lighting (e.g. white or pale green highlights) to enhance alien presence\n\nPrefer twilight, late afternoon, or cloudy day settings over pure night\n\nNo text or captions should appear in the images. Extract the most visually compelling and narratively important moments from the provided script to create standalone horror illustrations that capture the essence of extraterrestrial terror with a surreal, foggy, and psychologically disturbing tone.\n\nOutput format: return only a valid JSON array like this, where each prompt and image name is incremented sequentially:\n\n{\n  \"image_prompts\": [\n    {\n      \"prompt\": \"prompt_1\",\n      \"image\": \"image_1\"\n    },\n    {\n      \"prompt\": \"prompt_2\",\n      \"image\": \"image_2\"\n    },\n    {\n      \"prompt\": \"prompt_3\",\n      \"image\": \"image_3\"\n    }\n  ]\n}",
+              "role": "model"
+            },
+            {
+              "content": "=I will provide you with a script of maximum 2500 characters.\n\nI need you to extract {{ $item(\"0\").$node[\"SETUP\"].json[\"g_qtdimagens\"] }} prompts in English to generate images using an AI API. Each image should describe a key moment that represents a specific point in the script or phrase, following the same order as the narration.\n\nGuidelines:\n- Each prompt must be 1 to 2 sentences long\n- The image cannot contain any text, captions, or written elements\n- Ensure each prompt is rich in details and specificity\n- Focus on the most visually impactful and narratively important moments\n- Maintain chronological order from the script\n- Emphasize atmospheric elements, character positioning, and environmental details\n- Include specific lighting, mood, and extraterrestrial/horror elements when relevant\n\nThis is the script content:\n{{ $item(\"0\").$node[\"ROTEIRO\"].json[\"roteiro\"] }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -12512,
+        544
+      ],
+      "id": "7da8cc03-8d90-4521-9688-5ce7509e475c",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ydDNtq2d9IHYMbTY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.HUGGING_FACE_TOKEN }}"
+            },
+            {
+              "name": "Contet-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": " image/png"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={{ $json.prompt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -10448,
+        208
+      ],
+      "id": "42a9368d-940c-4b5b-a097-4d80780a9861",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Remove caracteres especiais": {
+      "main": [
+        [
+          {
+            "node": "ROTEIRO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP ElevenLabs": {
+      "main": [
+        [
+          {
+            "node": "Salva áudio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Salva áudio no TMP",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpa o JSON": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pega o tamanho da narração mp3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpa o diretorio /tmp": {
+      "main": [
+        []
+      ]
+    },
+    "Cria o diretório no /tmp se não existir": {
+      "main": [
+        [
+          {
+            "node": "lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva img no /tmp": {
+      "main": [
+        []
+      ]
+    },
+    "Pega a narração": {
+      "main": [
+        [
+          {
+            "node": "transcreve  audio no GROQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "transcreve  audio no GROQ": {
+      "main": [
+        [
+          {
+            "node": "Limpa o retorno do GROQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpa o retorno do GROQ": {
+      "main": [
+        [
+          {
+            "node": "gera .ass",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gera .ass": {
+      "main": [
+        [
+          {
+            "node": "Salva legenda no /tmp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva legenda no /tmp": {
+      "main": [
+        [
+          {
+            "node": "Gera vídeo com legenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera vídeo sem legenda": {
+      "main": [
+        [
+          {
+            "node": "Lê o vídeo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pega a narração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera vídeo com legenda": {
+      "main": [
+        [
+          {
+            "node": "Lê o vídeo com legenda",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Quantas musicas preciso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quantas musicas preciso": {
+      "main": [
+        [
+          {
+            "node": "Busca músicas no drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seleciona X de forma aleatória": {
+      "main": [
+        [
+          {
+            "node": "Faz o download da música",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faz o download da música": {
+      "main": [
+        [
+          {
+            "node": "Salva as músicas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva as músicas": {
+      "main": [
+        [
+          {
+            "node": "Gera comando para unir as músicas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera comando para unir as músicas": {
+      "main": [
+        [
+          {
+            "node": "Executa o comando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pega o tamanho do vídeo com legenda": {
+      "main": [
+        [
+          {
+            "node": "Pega o tamanho da música unida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pega o tamanho da música unida": {
+      "main": [
+        [
+          {
+            "node": "TEMPO VIDEO E MUSICA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Abaixa o volume da música": {
+      "main": [
+        [
+          {
+            "node": "Pega o tamanho do vídeo com legenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comando para unir música com narração": {
+      "main": [
+        [
+          {
+            "node": "Gera áudio mixado final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pega o tamanho da narração mp3": {
+      "main": [
+        [
+          {
+            "node": "Configura o tamanho da narração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configura o tamanho da narração": {
+      "main": [
+        [
+          {
+            "node": "NARRACAO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Upload do vídeo final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "SETUP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Pega status da imagem1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pega status da imagem1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Baixa a imagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixa a imagem": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Salva no /tmp",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Salva Gdrive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "JSON IMAGEM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pega nova thumb1": {
+      "main": [
+        [
+          {
+            "node": "Atualiza no Youtube",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Salva nova thumb no gdrive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva a fonte": {
+      "main": [
+        [
+          {
+            "node": "Texto para thumb",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faz o download da fonte ttf": {
+      "main": [
+        [
+          {
+            "node": "Salva a fonte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Agente Publicação",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Roteiro": {
+      "main": [
+        [
+          {
+            "node": "Verifica qtd caracteres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ROTEIRO": {
+      "main": [
+        [
+          {
+            "node": "Agente Publicação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SETUP": {
+      "main": [
+        [
+          {
+            "node": "Agente Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Publicação": {
+      "main": [
+        [
+          {
+            "node": "PUBLICAÇÃO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PUBLICAÇÃO": {
+      "main": [
+        [
+          {
+            "node": "Gera a slug do diretório",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera a slug do diretório": {
+      "main": [
+        [
+          {
+            "node": "Cria o diretório no /tmp se não existir",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create folder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Combina",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DIRETÓRIO": {
+      "main": [
+        [
+          {
+            "node": "Monta o TXT em base64",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gera roteiro em base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combina": {
+      "main": [
+        [
+          {
+            "node": "DIRETÓRIO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta o TXT em base64": {
+      "main": [
+        [
+          {
+            "node": "Salva no GDrive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera roteiro em base64": {
+      "main": [
+        [
+          {
+            "node": "Salva roteiro1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Salva roteiro",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atualiza planilha1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica qtd caracteres": {
+      "main": [
+        [
+          {
+            "node": "Ajusta caracteres",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Remove caracteres especiais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ajusta caracteres": {
+      "main": [
+        [
+          {
+            "node": "Remove caracteres especiais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aguarda": {
+      "main": [
+        [
+          {
+            "node": "Salva no GDrive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera comando ffmpeg": {
+      "main": [
+        [
+          {
+            "node": "Gera vídeo sem legenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca músicas no drive": {
+      "main": [
+        [
+          {
+            "node": "Seleciona X de forma aleatória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NARRACAO": {
+      "main": [
+        [
+          {
+            "node": "Gera comando ffmpeg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executa o comando": {
+      "main": [
+        [
+          {
+            "node": "lê o arquivo gerado",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "lista o diretório1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Abaixa o volume da música",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TEMPO VIDEO E MUSICA": {
+      "main": [
+        [
+          {
+            "node": "comando para unir música com narração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera áudio mixado final": {
+      "main": [
+        [
+          {
+            "node": "lê o arquivo gerado1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gera comando para criar o vídeo completo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera comando para criar o vídeo completo": {
+      "main": [
+        [
+          {
+            "node": "Gera o vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera o vídeo": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON PUBLICACAO": {
+      "main": [
+        [
+          {
+            "node": "YOUTUBE - Solicitação de sessão de upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lê vídeo final": {
+      "main": [
+        [
+          {
+            "node": "Youtube - Envio do binário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YOUTUBE - Solicitação de sessão de upload": {
+      "main": [
+        [
+          {
+            "node": "Lê vídeo final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Youtube - Envio do binário": {
+      "main": [
+        [
+          {
+            "node": "Agente Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Thumbnail",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON IMAGEM": {
+      "main": [
+        [
+          {
+            "node": "Gera thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Faz o parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faz o parser": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva no /tmp": {
+      "main": [
+        [
+          {
+            "node": "Faz o download da fonte ttf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Texto para thumb": {
+      "main": [
+        [
+          {
+            "node": "Adiciona texto na imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adiciona texto na imagem": {
+      "main": [
+        [
+          {
+            "node": "pega nova thumb1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza no Youtube": {
+      "main": [
+        [
+          {
+            "node": "ACABOU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Roteiro",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ajusta caracteres",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Publicação",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create folder": {
+      "main": [
+        [
+          {
+            "node": "Combina",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "JSON PUBLICACAO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualiza planilha1": {
+      "main": [
+        [
+          {
+            "node": "HTTP ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Limpa o JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "aguarda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva no GDrive1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7bb49e5f-829f-4902-bf43-6dfa04358e99",
+  "meta": {
+    "instanceId": "33738330930e3881dd5571eca013f36ddf8aab20e4ea5c1f2ebaf4a2b4668ac6"
+  },
+  "id": "2ZZmqGnNyXv4UblQ",
+  "tags": []
+}
