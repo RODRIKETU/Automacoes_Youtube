@@ -99,6 +99,37 @@ npx n8n start
 - **Botão de Início**: Inicia a automação com um clique
 
 ### **Temas Disponíveis**
+
+O sistema vem com os seguintes temas pré-configurados:
+
+#### 🎬 **Entretenimento & Terror**
+- **Horror Extraterrestre** - Histórias de terror com alienígenas
+- **Assombração Alienígena** - Terror cósmico com encontros brasileiros
+- **Contos de Terror Urbano** - Lendas urbanas e mistérios da cidade
+- **Fenômenos Paranormais** - Investigação de eventos inexplicados
+
+#### 📚 **Educação & Ciência**
+- **Mistérios Históricos** - Enigmas não resolvidos da história
+- **Ciência e Tecnologia** - Descobertas e avanços científicos
+- **Experimentos Científicos** - Ciência de forma divertida
+- **Tecnologia do Futuro** - Inovações que vão mudar o mundo
+- **Mistérios do Espaço** - Fenômenos cósmicos e descobertas
+- **Neurociência Aplicada** - Como o cérebro funciona
+- **Civilizações Perdidas** - Culturas antigas e seus mistérios
+
+#### 🌟 **Desenvolvimento & Lifestyle**
+- **Biografias Inspiradoras** - Histórias de pessoas extraordinárias
+- **Desenvolvimento Pessoal** - Estratégias para crescimento pessoal
+- **Psicologia do Sucesso** - Mentalidade de pessoas bem-sucedidas
+- **Longevidade e Saúde** - Segredos para uma vida saudável
+
+#### 🌍 **Curiosidades & Natureza**
+- **Curiosidades do Mundo** - Fatos interessantes sobre nosso planeta
+- **Vida Selvagem Extrema** - Animais perigosos e fenômenos da natureza
+
+> **💡 Dica**: Você pode adicionar mais temas editando diretamente no banco de dados ou executando o arquivo `temas_adicionais.sql`
+
+### **Temas Disponíveis**
 1. **Horror Extraterrestre** 👽 - Histórias de terror alien
 2. **Mistérios Históricos** 📜 - Enigmas não resolvidos
 3. **Ciência e Tecnologia** ⚛️ - Descobertas científicas

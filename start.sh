@@ -21,13 +21,15 @@ fi
 
 # Verificar se arquivo .env existe
 if [ ! -f .env ]; then
-    echo "📝 Criando arquivo .env a partir do template..."
-    cp .env.docker .env
-    echo "⚠️  IMPORTANTE: Edite o arquivo .env com seus tokens de API antes de continuar!"
+    echo "📝 Criando arquivo .env a partir do template de produção..."
+    cp .env.production .env
+    echo "✅ Credenciais MySQL já configuradas (rodriketu/Overcome2020k)"
+    echo "⚠️  IMPORTANTE: Edite o arquivo .env apenas com seus tokens de API!"
     echo "   Tokens necessários:"
     echo "   - HUGGING_FACE_TOKEN"
     echo "   - YOUTUBE_API_KEY" 
     echo "   - ELEVENLABS_API_KEY"
+    echo "   - GOOGLE_GEMINI_API_KEY"
     echo "   - GROQ_API_KEY"
     echo ""
     read -p "Pressione ENTER depois de configurar os tokens no arquivo .env..."

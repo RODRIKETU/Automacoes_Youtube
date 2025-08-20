@@ -61,22 +61,30 @@ Este sistema automatiza completamente o processo de criação de vídeos para Yo
 
 ### 1. **Clone o Repositório**
 ```bash
-git clone <repository-url>
-cd Automações_Youtube
+git clone https://github.com/RODRIKETU/Automacoes_Youtube.git
+cd Automacoes_Youtube
 ```
 
 ### 2. **Configure o Banco MySQL**
 ```bash
+# Executar setup do banco (cria usuário rodriketu automaticamente)
 mysql -u root -p < setup_mysql.sql
 ```
 
 ### 3. **Configure a API**
 ```bash
 npm install
-cp .env.example .env
-# Edite o arquivo .env com suas configurações
+cp .env.production .env
+# As credenciais já estão configuradas: rodriketu / Overcome2020k
 npm start
 ```
+
+### 🔐 **Credenciais Padrão**
+- **Usuário MySQL**: `rodriketu`
+- **Senha**: `Overcome2020k`
+- **Database**: `youtube_automation`
+
+> 📋 **Documentação completa**: Veja `CREDENCIAIS.md` para todos os detalhes de acesso
 
 ### 4. **Configure o n8n**
 ```bash

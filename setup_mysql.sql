@@ -151,10 +151,15 @@ SET GLOBAL max_allowed_packet = 1073741824; -- 1GB
 SET GLOBAL innodb_buffer_pool_size = 2147483648; -- 2GB (ajuste conforme sua RAM)
 SET GLOBAL innodb_log_file_size = 268435456; -- 256MB
 
--- 9. Criar usuário específico para n8n (opcional mas recomendado)
--- CREATE USER 'n8n_youtube'@'%' IDENTIFIED BY 'sua_senha_segura_aqui';
--- GRANT SELECT, INSERT, UPDATE, DELETE ON youtube_automation.* TO 'n8n_youtube'@'%';
--- FLUSH PRIVILEGES;
+-- 9. Criar usuário específico para o sistema
+CREATE USER 'rodriketu'@'%' IDENTIFIED BY 'Overcome2020k';
+GRANT ALL PRIVILEGES ON youtube_automation.* TO 'rodriketu'@'%';
+FLUSH PRIVILEGES;
+
+-- Também criar usuário para n8n (compatibilidade)
+CREATE USER 'n8n_youtube'@'%' IDENTIFIED BY 'Overcome2020k';
+GRANT SELECT, INSERT, UPDATE, DELETE ON youtube_automation.* TO 'n8n_youtube'@'%';
+FLUSH PRIVILEGES;
 
 -- 10. Inserir temas padrão
 INSERT INTO youtube_temas (nome, descricao, prompt_roteiro, prompt_imagens, tags_sugeridas, categoria_youtube, cor_hex, icone, ordem_exibicao) VALUES
@@ -198,11 +203,19 @@ INSERT INTO youtube_temas (nome, descricao, prompt_roteiro, prompt_imagens, tags
  'Crie um roteiro motivacional sobre desenvolvimento pessoal de 2-3 minutos. Aborde temas como produtividade, mindset, hábitos, metas ou autoconhecimento. Ofereça dicas práticas e acionáveis. O conteúdo deve ser inspirador e útil para a vida do espectador.',
  'personal growth, motivation concepts, success mindset, goal achievement, self-improvement',
  '["desenvolvimento", "motivacao", "produtividade", "habitos", "sucesso", "crescimento"]',
- '26', '#9370DB', 'trending-up', 6);
+ '26', '#9370DB', 'trending-up', 6),
 
--- 11. Inserir dados de exemplo/teste (opcional)
+('Assombração Alienígena',
+ 'Terror cósmico com encontros extraterrestres brasileiros',
+ 'Crie um roteiro de horror cósmico baseado em um encontro alienígena de 2-3 minutos. A história deve ser arrepiante e envolvente, com elementos como: avistamentos UFO, experimentos extraterrestres, ou fenômenos inexplicáveis em locais reais do Brasil. Use tensão atmosférica crescente, foque no terror psicológico e termine com um clímax perturbador. O roteiro deve ter entre 2300-2400 caracteres.',
+ 'alien horror Brazil, UFO encounter, cosmic terror, extraterrestrial mystery, Brazilian UFO sightings, paranormal activity',
+ '["alien", "ufo", "terror", "misterio", "assombracao", "horror", "extraterrestre", "suspense", "brasil"]',
+ '22', '#4B0082', 'alien', 7);
+
+-- 11. Inserir dados de exemplo/teste
 INSERT INTO youtube_projects (project_id, title, description, status) VALUES
-('teste_projeto_' || UNIX_TIMESTAMP(), 'Vídeo de Teste', 'Descrição do vídeo de teste', 'iniciado');
+('teste_projeto_' || UNIX_TIMESTAMP(), 'Vídeo de Teste', 'Descrição do vídeo de teste', 'iniciado'),
+('assombracao_alien_exemplo', 'ASSOMBRAÇÃO ALIEN: O MISTÉRIO DO FAROL NA ILHA DO MEL...', 'Você acredita em vida extraterrestre? Esta é uma história real de um encontro arrepiante que transformou a Ilha do Mel em um palco de puro terror. Testemunhas ficaram sem palavras diante do inexplicável. Este realmente aconteceu... Prepare-se para o mistério e a assombração que vem do desconhecido.', 'exemplo');
 
 -- Verificar se tudo foi criado corretamente
 SHOW TABLES;

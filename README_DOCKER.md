@@ -25,11 +25,12 @@ cd Automacoes_Youtube
 ### 2. Configuração Manual (Alternativa)
 
 ```bash
-# 1. Criar arquivo de ambiente
-cp .env.docker .env
+# 1. Configurar credenciais (já incluídas)
+cp .env.production .env
 
-# 2. Editar tokens de API no arquivo .env
+# 2. Editar apenas os tokens de API no arquivo .env
 nano .env
+# MySQL já configurado: rodriketu / Overcome2020k
 
 # 3. Iniciar os serviços
 docker-compose up -d
@@ -56,15 +57,32 @@ docker-compose up -d
 ### Arquivo `.env` - Tokens Obrigatórios:
 
 ```bash
-# APIs Essenciais
+# APIs Essenciais (configure estas)
 HUGGING_FACE_TOKEN=hf_your_token_here
 YOUTUBE_API_KEY=your_youtube_api_key_here
 ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-GROQ_API_KEY=your_groq_api_key_here
+GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key_here
 
-# Banco de Dados
-DB_PASSWORD=SuaSenhaSegura123!
-N8N_ENCRYPTION_KEY=sua-chave-de-criptografia-muito-segura
+# Credenciais do Sistema (já configuradas)
+DB_USER=rodriketu
+DB_PASSWORD=Overcome2020k
+N8N_ENCRYPTION_KEY=youtube-automation-2025-secure-key
+```
+
+## 🔐 Credenciais Padrão
+
+### **Banco de Dados MySQL**
+- **Usuário**: `rodriketu`
+- **Senha**: `Overcome2020k`
+- **Database**: `youtube_automation`
+- **Porta**: `3306`
+
+### **Conexão ao MySQL do Container**
+```bash
+# Conectar ao MySQL
+docker exec -it youtube_mysql mysql -u rodriketu -p
+# Senha: Overcome2020k
+```
 ```
 
 ## 📖 Como Usar
