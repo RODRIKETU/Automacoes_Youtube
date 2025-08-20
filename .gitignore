@@ -162,3 +162,10 @@ config/local.json
 *.db
 *.sqlite
 *.sqlite3
+
+# Docker específico
+.env.docker.local
+docker-compose.override.yml
+docker-data/
+mysql_data/
+n8n_data/

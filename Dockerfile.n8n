@@ -1,0 +1,35 @@
+# Dockerfile para n8n com FFmpeg
+FROM n8nio/n8n:latest
+
+USER root
+
+# Instalar FFmpeg e dependências
+RUN apk add --no-cache \
+    ffmpeg \
+    curl \
+    git \
+    python3 \
+    py3-pip \
+    nodejs \
+    npm \
+    && rm -rf /var/cache/apk/*
+
+# Instalar pacotes Node.js adicionais úteis para automação
+RUN npm install -g \
+    axios \
+    mysql2 \
+    jimp \
+    sharp
+
+# Criar diretório para workflows
+RUN mkdir -p /home/node/workflows && \
+    chown -R node:node /home/node/workflows
+
+# Voltar para o usuário node
+USER node
+
+# Expor porta
+EXPOSE 5678
+
+# Comando padrão
+CMD ["n8n", "start"]

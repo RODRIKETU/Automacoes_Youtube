@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # Banco de Dados MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: youtube_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-youtube_automation}
+      MYSQL_USER: ${DB_USER:-n8nuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-rootpassword}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./setup_mysql.sql:/docker-entrypoint-initdb.d/setup_mysql.sql
+    networks:
+      - youtube_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # n8n com FFmpeg
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n
+    container_name: youtube_n8n
+    restart: unless-stopped
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - DB_TYPE=mysqldb
+      - DB_MYSQLDB_HOST=mysql
+      - DB_MYSQLDB_PORT=3306
+      - DB_MYSQLDB_DATABASE=${DB_NAME:-youtube_automation}
+      - DB_MYSQLDB_USER=${DB_USER:-n8nuser}
+      - DB_MYSQLDB_PASSWORD=${DB_PASSWORD:-rootpassword}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-your-encryption-key-here}
+      # Tokens de API
+      - HUGGING_FACE_TOKEN=${HUGGING_FACE_TOKEN}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GOOGLE_SHEETS_CLIENT_ID=${GOOGLE_SHEETS_CLIENT_ID}
+      - GOOGLE_SHEETS_CLIENT_SECRET=${GOOGLE_SHEETS_CLIENT_SECRET}
+      - GOOGLE_DRIVE_CLIENT_ID=${GOOGLE_DRIVE_CLIENT_ID}
+      - GOOGLE_DRIVE_CLIENT_SECRET=${GOOGLE_DRIVE_CLIENT_SECRET}
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/workflows
+      - /tmp:/tmp
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - youtube_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: youtube_api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-n8nuser}
+      - DB_PASSWORD=${DB_PASSWORD:-rootpassword}
+      - DB_NAME=${DB_NAME:-youtube_automation}
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/start-youtube-automation
+      - CORS_ORIGIN=http://localhost:8080,http://localhost:5678
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    networks:
+      - youtube_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Interface Web (Nginx)
+  web:
+    image: nginx:alpine
+    container_name: youtube_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./interface_selecao_temas.html:/usr/share/nginx/html/index.html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api
+    networks:
+      - youtube_network
+
+volumes:
+  mysql_data:
+    driver: local
+  n8n_data:
+    driver: local
+
+networks:
+  youtube_network:
+    driver: bridge
