@@ -15,6 +15,8 @@ RUN npm ci --only=production
 # Copiar código da aplicação
 COPY api_server.js ./
 COPY package.json ./
+COPY web/ ./web/
+COPY postman_*.json ./
 
 # Criar diretório de logs
 RUN mkdir -p logs && \

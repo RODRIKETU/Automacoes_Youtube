@@ -35,46 +35,36 @@ Este sistema automatiza completamente o processo de criação de vídeos para Yo
 - **FFmpeg Streaming** - Processamento direto com pipes
 - **API RESTful** - Integração moderna e escalável
 
-## 📁 Estrutura Organizada
+## 📁 Estrutura do Projeto
 
 ```
-📦 youtube-automation/
-├── 🌐 **Interface & API**
-│   └── api_server.js                  # Servidor principal
-├── 📱 **Páginas Web**
-│   └── web/
-│       ├── interface_selecao_temas.html
-│       ├── stats_dashboard.html
-│       └── api_documentation.html
-├── 🧪 **Postman Collection**
-│   └── postman/
-│       ├── postman_collection.json   # Collection API
-│       ├── postman_environment.json  # Environment Postman
-│       └── README.md                 # Documentação Postman
-├── 🐳 **Docker**
-│   └── docker/
-│       ├── docker-compose.yml
-│       ├── Dockerfile.api
-│       ├── Dockerfile.n8n
-│       └── nginx.conf
-├── 🤖 **Workflows**
+📦 YouTube Automation
+├── 🌐 Interface Web
+│   ├── interface_selecao_temas.html    # Interface principal
+│   ├── stats_dashboard.html            # Dashboard de estatísticas
+│   ├── api_documentation.html          # Documentação da API
+│   └── api_server.js                   # Servidor API Node.js
+├── 🤖 Automação n8n
 │   └── workflows/
-│       └── youtube_mysql_tool_otimizado.json
-├── 🗄️ **Scripts SQL**  
+│       └── youtube_mysql_tool_otimizado.json  # Workflow otimizado (ÚNICO)
+├── 🗄️ Banco de Dados
 │   └── sql/
-│       ├── setup_mysql.sql
-│       └── temas_adicionais.sql
-├── 📚 **Documentação**
-│   └── docs/ (README, guias, configuração)
-├── 🔧 **Scripts**
-│   └── scripts/
-│       ├── start.sh                 # Script principal Docker
-│       └── README.md               # Documentação scripts
-├── ⚙️ **Configuração**
-│   ├── package.json
-│   ├── start.sh                    # Alias para scripts/start.sh
-│   └── .env.example
-└── 📄 README.md                     # Este arquivo
+│       ├── setup_mysql.sql             # Script de configuração
+│       └── temas_adicionais.sql        # Temas extras
+├── 📚 Documentação
+│   └── docs/
+│       ├── README.md                   # Este arquivo
+│       ├── README_DOCKER.md            # Guia Docker
+│       ├── README_MYSQL_TOOL_OTIMIZADO.md # Otimizações
+│       ├── CONFIGURACAO_N8N_CREDENCIAIS.md # Credenciais
+│       └── GUIA_TEMAS.md               # Guia de temas
+├── 📡 API & Postman
+│   ├── postman_collection.json        # Collection completa
+│   └── postman_environment.json       # Environment local
+└── ⚙️ Configuração
+    ├── docker-compose.yml             # Docker completo
+    ├── package.json                   # Dependências Node.js
+    └── .env.example                   # Exemplo de configuração
 ```
 
 ## 🛠️ Instalação Rápida
@@ -108,7 +98,15 @@ npm start
 
 ### 4. **Configure o n8n**
 ```bash
-# Importe o arquivo: youtube_otimizado_mysql.json
+### 🔧 Configuração do n8n
+
+1. Acesse: `http://localhost:5678`
+2. Configure credenciais MySQL
+3. Importe o workflow: `workflows/youtube_mysql_tool_otimizado.json`
+4. Ative o workflow
+
+**Workflow Disponível:**
+- `youtube_mysql_tool_otimizado.json` - Versão otimizada com MySQL Tool (RECOMENDADO)
 # Configure as credenciais necessárias
 ```
 

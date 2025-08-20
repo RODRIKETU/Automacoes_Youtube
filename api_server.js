@@ -51,7 +51,12 @@ async function initDatabase() {
 
 // 1. Servir a página inicial
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'interface_selecao_temas.html'));
+    res.sendFile(path.join(__dirname, 'web', 'interface_selecao_temas.html'));
+});
+
+// Rota para página de estatísticas
+app.get('/stats', (req, res) => {
+    res.sendFile(path.join(__dirname, 'web', 'stats_dashboard.html'));
 });
 
 // 2. Buscar todos os temas ativos
@@ -217,15 +222,15 @@ app.get('/api/projects', async (req, res) => {
 // 6. Buscar estatísticas
 app.get('/api/stats', async (req, res) => {
     try {
-        // Estatísticas gerais
+        // Estatísticas gerais dos últimos 30 dias
         const [statsRows] = await pool.execute(`
             SELECT 
                 COUNT(*) as total_projetos,
-                SUM(CASE WHEN status = 'concluido' THEN 1 ELSE 0 END) as concluidos,
+                SUM(CASE WHEN status = 'video_concluido' THEN 1 ELSE 0 END) as concluidos,
                 SUM(CASE WHEN status = 'erro' THEN 1 ELSE 0 END) as com_erro,
                 SUM(CASE WHEN status = 'publicado' THEN 1 ELSE 0 END) as publicados,
-                SUM(CASE WHEN status IN ('iniciado', 'processando') THEN 1 ELSE 0 END) as em_andamento,
-                AVG(processing_time) as tempo_medio_processamento
+                SUM(CASE WHEN status IN ('iniciado', 'processando', 'roteiro_gerado') THEN 1 ELSE 0 END) as em_andamento,
+                AVG(TIMESTAMPDIFF(SECOND, created_at, updated_at)) as tempo_medio_processamento
             FROM youtube_projects 
             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         `);
@@ -235,21 +240,67 @@ app.get('/api/stats', async (req, res) => {
             SELECT 
                 t.nome as tema,
                 t.cor_hex as cor,
+                t.icone,
                 COUNT(p.id) as total_videos,
-                SUM(CASE WHEN p.status = 'publicado' THEN 1 ELSE 0 END) as videos_publicados
+                SUM(CASE WHEN p.status = 'publicado' THEN 1 ELSE 0 END) as videos_publicados,
+                SUM(CASE WHEN p.status = 'video_concluido' THEN 1 ELSE 0 END) as videos_concluidos,
+                SUM(CASE WHEN p.status = 'erro' THEN 1 ELSE 0 END) as videos_erro
             FROM youtube_temas t
             LEFT JOIN youtube_projects p ON t.id = p.tema_id 
                 AND p.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
             WHERE t.ativo = TRUE
-            GROUP BY t.id, t.nome, t.cor_hex
+            GROUP BY t.id, t.nome, t.cor_hex, t.icone
             ORDER BY total_videos DESC
+        `);
+        
+        // Estatísticas por dia (últimos 7 dias)
+        const [dailyStatsRows] = await pool.execute(`
+            SELECT 
+                DATE(created_at) as data,
+                COUNT(*) as total_videos,
+                SUM(CASE WHEN status = 'video_concluido' THEN 1 ELSE 0 END) as concluidos,
+                SUM(CASE WHEN status = 'erro' THEN 1 ELSE 0 END) as erros
+            FROM youtube_projects 
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY data DESC
+        `);
+        
+        // Estatísticas de arquivos
+        const [fileStatsRows] = await pool.execute(`
+            SELECT 
+                file_type,
+                COUNT(*) as total_arquivos,
+                ROUND(SUM(file_size) / 1024 / 1024, 2) as tamanho_total_mb
+            FROM youtube_files 
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY file_type
+        `);
+        
+        // Logs de erro recentes
+        const [errorLogsRows] = await pool.execute(`
+            SELECT 
+                project_id,
+                step_name,
+                message,
+                created_at
+            FROM youtube_process_logs 
+            WHERE status = 'error' 
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            ORDER BY created_at DESC
+            LIMIT 10
         `);
         
         res.json({
             success: true,
             data: {
                 geral: statsRows[0],
-                por_tema: themeStatsRows
+                por_tema: themeStatsRows,
+                por_dia: dailyStatsRows,
+                arquivos: fileStatsRows,
+                erros_recentes: errorLogsRows,
+                periodo: '30 dias',
+                atualizado_em: new Date().toISOString()
             }
         });
         
@@ -292,6 +343,88 @@ app.post('/api/admin/themes', async (req, res) => {
             error: 'Erro ao criar tema: ' + error.message
         });
     }
+});
+
+// 6. Rota para página de documentação da API
+app.get('/api-docs', (req, res) => {
+    res.sendFile(path.join(__dirname, 'web', 'api_documentation.html'));
+});
+
+// 7. Download da collection do Postman
+app.get('/api/postman-collection', (req, res) => {
+    const filePath = path.join(__dirname, 'postman', 'postman_collection.json');
+    res.download(filePath, 'YouTube_Automation_API.postman_collection.json', (err) => {
+        if (err) {
+            console.error('Erro ao enviar collection:', err);
+            res.status(500).json({
+                success: false,
+                error: 'Erro ao baixar collection'
+            });
+        }
+    });
+});
+
+// 8. Download do environment do Postman
+app.get('/api/postman-environment', (req, res) => {
+    const filePath = path.join(__dirname, 'postman', 'postman_environment.json');
+    res.download(filePath, 'YouTube_Automation_Local.postman_environment.json', (err) => {
+        if (err) {
+            console.error('Erro ao enviar environment:', err);
+            res.status(500).json({
+                success: false,
+                error: 'Erro ao baixar environment'
+            });
+        }
+    });
+});
+
+// 9. Health check da API
+app.get('/api/health', async (req, res) => {
+    try {
+        // Testa conexão com banco
+        const connection = await pool.getConnection();
+        await connection.ping();
+        connection.release();
+        
+        res.json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0',
+            services: {
+                database: 'connected',
+                n8n: 'running',
+                storage: 'available'
+            }
+        });
+    } catch (error) {
+        res.status(503).json({
+            status: 'error',
+            timestamp: new Date().toISOString(),
+            error: 'Database connection failed'
+        });
+    }
+});
+
+// 10. Informações da API
+app.get('/api/info', (req, res) => {
+    res.json({
+        name: 'YouTube Automation API',
+        version: '1.0.0',
+        description: 'API para automação de criação de vídeos do YouTube',
+        author: 'YouTube Automation System',
+        endpoints: {
+            themes: '/api/themes',
+            stats: '/api/stats',
+            projects: '/api/projects',
+            automation: '/api/start-automation',
+            documentation: '/api-docs',
+            health: '/api/health'
+        },
+        postman: {
+            collection: '/api/postman-collection',
+            environment: '/api/postman-environment'
+        }
+    });
 });
 
 // Middleware de tratamento de erros

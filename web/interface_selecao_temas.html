@@ -45,6 +45,41 @@
             opacity: 0.9;
         }
 
+        .nav-bar {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 40px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.15);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+
         .content {
             padding: 40px;
         }
@@ -85,18 +120,21 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            background: white;
+            backdrop-filter: blur(10px);
         }
 
         .theme-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            border-color: #c1c7d0;
         }
 
         .theme-card.selected {
             border-color: #667eea;
             background: linear-gradient(135deg, #667eea10 0%, #764ba220 100%);
             transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.25);
         }
 
         .theme-header {
@@ -162,19 +200,23 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 15px 40px;
+            padding: 16px 48px;
             font-size: 1.1rem;
-            border-radius: 50px;
+            border-radius: 25px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
             position: relative;
             overflow: hidden;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .start-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
         }
 
         .start-button:disabled {
@@ -253,6 +295,15 @@
             <h1>🎬 YouTube Automation</h1>
             <p>Selecione um tema para criar seu vídeo automaticamente</p>
         </div>
+
+        <nav class="nav-bar">
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Início</a>
+                <a href="/stats" class="nav-link">📊 Dashboard</a>
+                <a href="/api-docs" class="nav-link">📡 API Docs</a>
+                <a href="http://localhost:5678" class="nav-link" target="_blank">⚙️ n8n</a>
+            </div>
+        </nav>
 
         <div class="content">
             <div id="loading" class="loading">

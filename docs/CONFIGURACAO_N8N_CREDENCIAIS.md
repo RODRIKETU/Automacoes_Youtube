@@ -65,7 +65,7 @@ Este guia mostra como configurar todas as credenciais de API diretamente na inte
 
 ### **Importar Workflows**
 1. Vá em **Workflows** > **Import from File**
-2. Selecione `youtube_otimizado_mysql.json`
+2. Selecione `workflows/youtube_mysql_tool_otimizado.json`
 3. Clique em **Import**
 
 ### **Associar Credenciais aos Nós**

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📡 API Documentation - YouTube Automation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-bar {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.15);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .content-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: 1fr;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            border-bottom: 2px solid #e1e5e9;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #333;
+            margin: 20px 0 10px 0;
+            font-size: 1.3rem;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-right: 10px;
+        }
+
+        .method.get { background: #28a745; }
+        .method.post { background: #007bff; }
+        .method.put { background: #ffc107; color: #333; }
+        .method.delete { background: #dc3545; }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+
+        .download-section {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea10 0%, #764ba220 100%);
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 10px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .parameter-table th,
+        .parameter-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .parameter-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .response-example {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .status-code {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .status-200 { background: #d4edda; color: #155724; }
+        .status-400 { background: #f8d7da; color: #721c24; }
+        .status-500 { background: #f8d7da; color: #721c24; }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 10px;
+            }
+            
+            .nav-link {
+                padding: 10px 16px;
+                font-size: 0.9rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📡 API Documentation</h1>
+            <p>Documentação completa da API do YouTube Automation System</p>
+        </div>
+
+        <nav class="nav-bar">
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Início</a>
+                <a href="/stats" class="nav-link">📊 Dashboard</a>
+                <a href="/api-docs" class="nav-link">📡 API Docs</a>
+                <a href="http://localhost:5678" class="nav-link" target="_blank">⚙️ n8n</a>
+            </div>
+        </nav>
+
+        <div class="content-grid">
+            <!-- Visão Geral -->
+            <div class="section">
+                <h2>🎯 Visão Geral</h2>
+                <p>A API do YouTube Automation System permite integração completa com o sistema de criação automática de vídeos. Todas as respostas são em formato JSON e utilizam códigos de status HTTP padrão.</p>
+                
+                <h3>Base URL</h3>
+                <div class="code-block">http://localhost:3000</div>
+                
+                <h3>Formato de Resposta</h3>
+                <p>Todas as respostas seguem o padrão JSON com os seguintes campos:</p>
+                <div class="code-block">{
+  "success": boolean,
+  "data": object,
+  "message": string,
+  "timestamp": string
+}</div>
+            </div>
+
+            <!-- Collection Postman -->
+            <div class="download-section">
+                <h2>📥 Postman Collection</h2>
+                <p>Baixe nossa collection completa do Postman com todos os endpoints documentados e exemplos prontos para teste.</p>
+                <a href="/api/postman-collection" class="download-btn" download>
+                    📦 Download Postman Collection
+                </a>
+                <a href="/api/postman-environment" class="download-btn" download>
+                    🌍 Download Environment
+                </a>
+                <br><br>
+                <p><small>💡 Importe os dois arquivos no Postman para ter acesso completo a todos os endpoints com variáveis configuradas</small></p>
+            </div>
+
+            <!-- Endpoints -->
+            <div class="section">
+                <h2>🛠 Endpoints Disponíveis</h2>
+
+                <!-- GET Temas -->
+                <div class="endpoint">
+                    <h3>
+                        <span class="method get">GET</span>
+                        Listar Temas Disponíveis
+                    </h3>
+                    <div class="code-block">GET /api/themes</div>
+                    <p>Retorna todos os temas disponíveis para criação de vídeos.</p>
+                    
+                    <h4>Resposta <span class="status-code status-200">200 OK</span></h4>
+                    <div class="response-example">
+                        <div class="code-block">{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "nome": "Contos de Terror Urbano",
+      "descricao": "Histórias assombradas em cenários urbanos",
+      "cor": "#800020",
+      "icone": "building",
+      "tags": ["terror", "urbano", "suspense"]
+    }
+  ]
+}</div>
+                    </div>
+                </div>
+
+                <!-- GET Estatísticas -->
+                <div class="endpoint">
+                    <h3>
+                        <span class="method get">GET</span>
+                        Estatísticas do Sistema
+                    </h3>
+                    <div class="code-block">GET /api/stats</div>
+                    <p>Retorna estatísticas completas do sistema incluindo métricas por tema, arquivos e logs.</p>
+                    
+                    <h4>Resposta <span class="status-code status-200">200 OK</span></h4>
+                    <div class="response-example">
+                        <div class="code-block">{
+  "success": true,
+  "data": {
+    "geral": {
+      "total_projetos": 15,
+      "concluidos": 12,
+      "com_erro": 2,
+      "publicados": 10,
+      "em_andamento": 1
+    },
+    "por_tema": [...],
+    "por_dia": [...],
+    "arquivos": [...],
+    "erros_recentes": [...]
+  }
+}</div>
+                    </div>
+                </div>
+
+                <!-- POST Criar Projeto -->
+                <div class="endpoint">
+                    <h3>
+                        <span class="method post">POST</span>
+                        Criar Novo Projeto
+                    </h3>
+                    <div class="code-block">POST /api/projects</div>
+                    <p>Inicia a criação de um novo vídeo com o tema especificado.</p>
+                    
+                    <h4>Parâmetros</h4>
+                    <table class="parameter-table">
+                        <thead>
+                            <tr>
+                                <th>Parâmetro</th>
+                                <th>Tipo</th>
+                                <th>Obrigatório</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>tema_id</td>
+                                <td>integer</td>
+                                <td>Sim</td>
+                                <td>ID do tema selecionado</td>
+                            </tr>
+                            <tr>
+                                <td>titulo_personalizado</td>
+                                <td>string</td>
+                                <td>Não</td>
+                                <td>Título personalizado para o vídeo</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Exemplo de Requisição</h4>
+                    <div class="code-block">{
+  "tema_id": 1,
+  "titulo_personalizado": "Minha História de Terror"
+}</div>
+
+                    <h4>Resposta <span class="status-code status-200">200 OK</span></h4>
+                    <div class="response-example">
+                        <div class="code-block">{
+  "success": true,
+  "data": {
+    "projeto_id": "proj_123456",
+    "status": "iniciado",
+    "tema": "Contos de Terror Urbano",
+    "created_at": "2025-08-20T21:30:00Z"
+  },
+  "message": "Projeto criado com sucesso"
+}</div>
+                    </div>
+                </div>
+
+                <!-- GET Status Projeto -->
+                <div class="endpoint">
+                    <h3>
+                        <span class="method get">GET</span>
+                        Status do Projeto
+                    </h3>
+                    <div class="code-block">GET /api/projects/{projeto_id}/status</div>
+                    <p>Consulta o status atual de um projeto específico.</p>
+                    
+                    <h4>Parâmetros de URL</h4>
+                    <table class="parameter-table">
+                        <thead>
+                            <tr>
+                                <th>Parâmetro</th>
+                                <th>Tipo</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>projeto_id</td>
+                                <td>string</td>
+                                <td>ID único do projeto</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Resposta <span class="status-code status-200">200 OK</span></h4>
+                    <div class="response-example">
+                        <div class="code-block">{
+  "success": true,
+  "data": {
+    "projeto_id": "proj_123456",
+    "status": "processando",
+    "progresso": 65,
+    "etapa_atual": "gerando_audio",
+    "tempo_estimado": "5 minutos",
+    "arquivos_gerados": ["script.txt", "audio.mp3"]
+  }
+}</div>
+                    </div>
+                </div>
+
+                <!-- GET Logs -->
+                <div class="endpoint">
+                    <h3>
+                        <span class="method get">GET</span>
+                        Logs do Sistema
+                    </h3>
+                    <div class="code-block">GET /api/logs</div>
+                    <p>Retorna os logs recentes do sistema com filtros opcionais.</p>
+                    
+                    <h4>Query Parameters</h4>
+                    <table class="parameter-table">
+                        <thead>
+                            <tr>
+                                <th>Parâmetro</th>
+                                <th>Tipo</th>
+                                <th>Padrão</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>limit</td>
+                                <td>integer</td>
+                                <td>50</td>
+                                <td>Número máximo de logs</td>
+                            </tr>
+                            <tr>
+                                <td>level</td>
+                                <td>string</td>
+                                <td>all</td>
+                                <td>Nível do log (error, warning, info)</td>
+                            </tr>
+                            <tr>
+                                <td>projeto_id</td>
+                                <td>string</td>
+                                <td>-</td>
+                                <td>Filtrar por projeto específico</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Exemplo</h4>
+                    <div class="code-block">GET /api/logs?limit=10&level=error</div>
+                </div>
+            </div>
+
+            <!-- Códigos de Status -->
+            <div class="section">
+                <h2>📋 Códigos de Status HTTP</h2>
+                
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Status</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status-code status-200">200</span></td>
+                            <td>OK</td>
+                            <td>Requisição executada com sucesso</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-code status-400">400</span></td>
+                            <td>Bad Request</td>
+                            <td>Parâmetros inválidos ou em falta</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-code status-400">404</span></td>
+                            <td>Not Found</td>
+                            <td>Recurso não encontrado</td>
+                        </tr>
+                        <tr>
+                            <td><span class="status-code status-500">500</span></td>
+                            <td>Internal Server Error</td>
+                            <td>Erro interno do servidor</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Autenticação -->
+            <div class="section">
+                <h2>🔐 Autenticação</h2>
+                <p>Atualmente a API é executada em ambiente local sem autenticação. Para ambiente de produção, implemente:</p>
+                <ul>
+                    <li>🔑 <strong>API Keys</strong> - Headers personalizados</li>
+                    <li>🎫 <strong>JWT Tokens</strong> - Autenticação por token</li>
+                    <li>🛡️ <strong>Rate Limiting</strong> - Controle de requisições</li>
+                    <li>🔒 <strong>HTTPS</strong> - Comunicação criptografada</li>
+                </ul>
+            </div>
+
+            <!-- Exemplos de Uso -->
+            <div class="section">
+                <h2>💡 Exemplos de Uso</h2>
+                
+                <h3>JavaScript/Fetch</h3>
+                <div class="code-block">// Criar novo projeto
+const response = await fetch('http://localhost:3000/api/projects', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    tema_id: 1,
+    titulo_personalizado: 'Meu Vídeo Épico'
+  })
+});
+
+const data = await response.json();
+console.log('Projeto criado:', data.data.projeto_id);</div>
+
+                <h3>Python/Requests</h3>
+                <div class="code-block">import requests
+
+# Listar temas
+response = requests.get('http://localhost:3000/api/themes')
+temas = response.json()
+
+# Criar projeto
+novo_projeto = {
+    'tema_id': 1,
+    'titulo_personalizado': 'Vídeo Python'
+}
+
+response = requests.post(
+    'http://localhost:3000/api/projects',
+    json=novo_projeto
+)
+
+print(f"Status: {response.status_code}")
+print(f"Projeto ID: {response.json()['data']['projeto_id']}")</div>
+
+                <h3>cURL</h3>
+                <div class="code-block"># Listar estatísticas
+curl -X GET http://localhost:3000/api/stats
+
+# Criar novo projeto
+curl -X POST http://localhost:3000/api/projects \
+  -H "Content-Type: application/json" \
+  -d '{"tema_id": 1, "titulo_personalizado": "Teste cURL"}'</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

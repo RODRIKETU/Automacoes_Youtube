@@ -94,7 +94,7 @@ docker exec -it youtube_mysql mysql -u rodriketu -p
 
 ### 2. Configurar n8n (Primeira vez)
 - URL: http://localhost:5678
-- Importe o workflow: `workflows/youtube_otimizado_mysql.json`
+- Importe o workflow: `workflows/youtube_mysql_tool_otimizado.json`
 - Configure as credenciais MySQL:
   - Host: `mysql`
   - Usuário: `n8nuser`

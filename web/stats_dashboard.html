@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Dashboard - YouTube Automation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-bar {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.15);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+
+        .stat-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-description {
+            color: #777;
+            font-size: 0.9rem;
+        }
+
+        .theme-stats {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .theme-stats h3 {
+            margin-bottom: 20px;
+            color: #555;
+            font-size: 1.3rem;
+        }
+
+        .theme-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .theme-item {
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+
+        .theme-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .theme-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            color: #555;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .daily-chart {
+            display: flex;
+            align-items: end;
+            justify-content: space-around;
+            height: 200px;
+            border-bottom: 2px solid #eee;
+            padding: 20px 0;
+        }
+
+        .chart-bar {
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 4px 4px 0 0;
+            min-width: 40px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        .chart-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .chart-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .error-logs {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .error-logs h3 {
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+
+        .error-item {
+            padding: 15px;
+            border-left: 4px solid #e74c3c;
+            background: #fef5f5;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .error-title {
+            font-weight: 600;
+            color: #c0392b;
+            margin-bottom: 5px;
+        }
+
+        .error-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.1);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-warning { background: #fff3cd; color: #856404; }
+        .status-info { background: #d1ecf1; color: #0c5460; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .container { padding: 15px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .theme-list { grid-template-columns: 1fr; }
+            .daily-chart { height: 150px; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Dashboard YouTube Automation</h1>
+            <p>Monitoramento completo da automação de vídeos</p>
+        </div>
+
+        <nav class="nav-bar">
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Início</a>
+                <a href="/stats" class="nav-link">📊 Dashboard</a>
+                <a href="/api-docs" class="nav-link">📡 API Docs</a>
+                <a href="http://localhost:5678" class="nav-link" target="_blank">⚙️ n8n</a>
+            </div>
+        </nav>
+
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Carregando estatísticas...</p>
+        </div>
+
+        <div id="dashboard" style="display: none;">
+            <!-- Estatísticas Gerais -->
+            <div class="stats-grid" id="statsGrid">
+                <!-- Será preenchido via JavaScript -->
+            </div>
+
+            <!-- Gráfico por Dia -->
+            <div class="chart-container">
+                <h3 class="chart-title">📈 Atividade dos Últimos 7 Dias</h3>
+                <div class="daily-chart" id="dailyChart">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Estatísticas por Tema -->
+            <div class="theme-stats">
+                <h3>🎯 Performance por Tema</h3>
+                <div class="theme-list" id="themeList">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Logs de Erro -->
+            <div class="error-logs">
+                <h3>🚨 Erros Recentes</h3>
+                <div id="errorList">
+                    <!-- Será preenchido via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadStats()" title="Atualizar dados">
+        🔄
+    </button>
+
+    <script>
+        let statsData = null;
+
+        async function loadStats() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('dashboard').style.display = 'none';
+
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+
+                if (data.success) {
+                    statsData = data.data;
+                    renderDashboard();
+                } else {
+                    throw new Error(data.error);
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+                document.getElementById('loading').innerHTML = 
+                    '<p style="color: #e74c3c;">❌ Erro ao carregar dados</p>';
+            }
+        }
+
+        function renderDashboard() {
+            renderGeneralStats();
+            renderThemeStats();
+            renderDailyChart();
+            renderErrorLogs();
+        }
+
+        function renderGeneralStats() {
+            const stats = statsData.geral;
+            const statsGrid = document.getElementById('statsGrid');
+
+            const cards = [
+                {
+                    icon: '📊',
+                    title: 'Total de Projetos',
+                    number: stats.total_projetos || 0,
+                    description: 'Últimos 30 dias'
+                },
+                {
+                    icon: '✅',
+                    title: 'Vídeos Concluídos',
+                    number: stats.concluidos || 0,
+                    description: `${getSuccessRate(stats)}% de sucesso`
+                },
+                {
+                    icon: '⏳',
+                    title: 'Em Andamento',
+                    number: stats.em_andamento || 0,
+                    description: 'Processando agora'
+                },
+                {
+                    icon: '❌',
+                    title: 'Com Erro',
+                    number: stats.com_erro || 0,
+                    description: 'Requer atenção'
+                },
+                {
+                    icon: '⏱️',
+                    title: 'Tempo Médio',
+                    number: formatTime(stats.tempo_medio_processamento),
+                    description: 'Por vídeo'
+                },
+                {
+                    icon: '🎬',
+                    title: 'Publicados',
+                    number: stats.publicados || 0,
+                    description: 'No YouTube'
+                }
+            ];
+
+            statsGrid.innerHTML = cards.map(card => `
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">${card.icon}</div>
+                        <div class="stat-title">${card.title}</div>
+                    </div>
+                    <div class="stat-number">${card.number}</div>
+                    <div class="stat-description">${card.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderThemeStats() {
+            const themes = statsData.por_tema;
+            const themeList = document.getElementById('themeList');
+
+            themeList.innerHTML = themes.map(theme => `
+                <div class="theme-item" style="border-left-color: ${theme.cor || '#667eea'}">
+                    <div class="theme-name">
+                        ${theme.icone ? getIconEmoji(theme.icone) : '🎯'} ${theme.tema}
+                    </div>
+                    <div class="theme-stats-row">
+                        <span>Total: <strong>${theme.total_videos}</strong></span>
+                        <span>Concluídos: <strong>${theme.videos_concluidos || 0}</strong></span>
+                        <span>Erros: <strong>${theme.videos_erro || 0}</strong></span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderDailyChart() {
+            const dailyData = statsData.por_dia;
+            const chartContainer = document.getElementById('dailyChart');
+
+            if (!dailyData || dailyData.length === 0) {
+                chartContainer.innerHTML = '<p style="text-align: center; color: #666;">Nenhum dado disponível</p>';
+                return;
+            }
+
+            const maxValue = Math.max(...dailyData.map(d => d.total_videos));
+
+            chartContainer.innerHTML = dailyData.reverse().map(day => {
+                const height = maxValue > 0 ? (day.total_videos / maxValue) * 150 : 0;
+                const date = new Date(day.data).toLocaleDateString('pt-BR', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+
+                return `
+                    <div class="chart-bar" style="height: ${height}px">
+                        <div class="chart-value">${day.total_videos}</div>
+                        <div class="chart-label">${date}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderErrorLogs() {
+            const errors = statsData.erros_recentes;
+            const errorList = document.getElementById('errorList');
+
+            if (!errors || errors.length === 0) {
+                errorList.innerHTML = '<p style="color: #27ae60;">✅ Nenhum erro recente!</p>';
+                return;
+            }
+
+            errorList.innerHTML = errors.map(error => `
+                <div class="error-item">
+                    <div class="error-title">${error.step_name} - ${error.project_id}</div>
+                    <div class="error-details">
+                        ${error.message} 
+                        <span style="float: right;">${formatDateTime(error.created_at)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getSuccessRate(stats) {
+            const total = stats.total_projetos || 0;
+            const success = stats.concluidos || 0;
+            return total > 0 ? Math.round((success / total) * 100) : 0;
+        }
+
+        function formatTime(seconds) {
+            if (!seconds) return '0s';
+            
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.round(seconds % 60);
+            
+            if (minutes > 0) {
+                return `${minutes}m ${secs}s`;
+            }
+            return `${secs}s`;
+        }
+
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleString('pt-BR');
+        }
+
+        function getIconEmoji(iconName) {
+            const icons = {
+                'building': '🏢',
+                'leaf': '🌿',
+                'flask': '🧪',
+                'cpu': '💻',
+                'brain': '🧠',
+                'star': '⭐',
+                'monument': '🏛️',
+                'ghost': '👻',
+                'brain-circuit': '🤖',
+                'heart': '❤️'
+            };
+            return icons[iconName] || '🎯';
+        }
+
+        // Auto-refresh a cada 30 segundos
+        setInterval(loadStats, 30000);
+
+        // Carrega dados iniciais
+        loadStats();
+    </script>
+</body>
+</html>
