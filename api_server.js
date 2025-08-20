@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -179,7 +181,7 @@ app.post('/api/start-automation', async (req, res) => {
 // 5. Buscar status dos projetos
 app.get('/api/projects', async (req, res) => {
     try {
-        const { status, limit = 20 } = req.query;
+        const { status, limit = '20' } = req.query;
         
         let query = `
             SELECT p.*, t.nome as tema_nome, t.cor_hex as tema_cor
@@ -194,8 +196,7 @@ app.get('/api/projects', async (req, res) => {
             params.push(status);
         }
         
-        query += ' ORDER BY p.created_at DESC LIMIT ?';
-        params.push(parseInt(limit));
+        query += ' ORDER BY p.created_at DESC LIMIT ' + parseInt(limit, 10);
         
         const [rows] = await pool.execute(query, params);
         

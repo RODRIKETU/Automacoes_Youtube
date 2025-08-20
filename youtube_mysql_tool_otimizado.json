@@ -1,0 +1,831 @@
+{
+  "name": "youtube_mysql_tool_otimizado",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "start-youtube-automation",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300],
+      "id": "webhook-trigger",
+      "name": "🚀 Webhook Início"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM youtube_temas WHERE id = ? AND ativo = TRUE",
+        "additionalFields": {
+          "queryParameters": "=[\"{{ $json.tema_id }}\"]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [300, 300],
+      "id": "busca-tema",
+      "name": "📋 Busca Tema",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "tema-exists",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "id": "check-tema-existe",
+      "name": "✅ Tema Existe?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "project-id",
+              "name": "project_id", 
+              "value": "={{ $('📋 Busca Tema').item.json.nome.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now() }}",
+              "type": "string"
+            },
+            {
+              "id": "tema-data",
+              "name": "tema",
+              "value": "={{ $('📋 Busca Tema').item.json }}",
+              "type": "object"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [700, 200],
+      "id": "setup-variaveis",
+      "name": "⚙️ Setup Variáveis"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "youtube_projects",
+        "columns": "project_id, tema_id, status, titulo, descricao, created_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"{{ $json.project_id }}\",\n    {{ $json.tema.id }},\n    \"iniciado\",\n    \"Vídeo: {{ $json.tema.nome }}\",\n    \"{{ $json.tema.descricao }}\",\n    \"{{ $json.timestamp }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [900, 200],
+      "id": "cria-projeto",
+      "name": "📁 Cria Projeto",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "=[{\n  \"parts\": [{\n    \"text\": \"{{ $('⚙️ Setup Variáveis').item.json.tema.prompt_roteiro }}\\n\\nCrie um roteiro envolvente e educativo de 2-3 minutos sobre este tema. O roteiro deve ter introdução impactante, desenvolvimento claro e conclusão marcante. Use linguagem acessível e inclua dados interessantes.\"\n  }]\n}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 200],
+      "id": "gera-roteiro",
+      "name": "✏️ Gera Roteiro IA",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "roteiro-text",
+              "name": "roteiro",
+              "value": "={{ $json.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "project-id-keep",
+              "name": "project_id",
+              "value": "={{ $('⚙️ Setup Variáveis').item.json.project_id }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1300, 200],
+      "id": "extrai-roteiro",
+      "name": "📝 Extrai Roteiro"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "youtube_projects",
+        "updateKey": "project_id",
+        "columns": "roteiro, status, updated_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"{{ $json.roteiro }}\",\n    \"roteiro_gerado\",\n    \"{{ new Date().toISOString() }}\",\n    \"{{ $json.project_id }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [1500, 200],
+      "id": "atualiza-projeto-roteiro",
+      "name": "💾 Salva Roteiro",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $('📝 Extrai Roteiro').item.json.roteiro }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_multilingual_v2"
+            },
+            {
+              "name": "voice_settings",
+              "value": "={\n  \"stability\": 0.75,\n  \"similarity_boost\": 0.75,\n  \"style\": 0.5,\n  \"use_speaker_boost\": true\n}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "binaryData"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1700, 200],
+      "id": "gera-audio",
+      "name": "🎵 Gera Áudio TTS",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "ElevenLabs API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "audio-base64",
+              "name": "audio_base64",
+              "value": "={{ Buffer.from($binary.data).toString('base64') }}",
+              "type": "string"
+            },
+            {
+              "id": "audio-filename",
+              "name": "audio_filename",
+              "value": "={{ $('📝 Extrai Roteiro').item.json.project_id }}_audio.mp3",
+              "type": "string"
+            },
+            {
+              "id": "project-id-audio",
+              "name": "project_id",
+              "value": "={{ $('📝 Extrai Roteiro').item.json.project_id }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1900, 200],
+      "id": "converte-audio-base64",
+      "name": "🔄 Converte Áudio"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "youtube_files",
+        "columns": "project_id, filename, file_type, file_data, file_size, created_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"{{ $json.project_id }}\",\n    \"{{ $json.audio_filename }}\",\n    \"audio/mp3\",\n    \"{{ $json.audio_base64 }}\",\n    {{ $json.audio_base64.length }},\n    \"{{ new Date().toISOString() }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [2100, 200],
+      "id": "salva-audio-mysql",
+      "name": "💿 Salva Áudio MySQL",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={{ $('⚙️ Setup Variáveis').item.json.tema.prompt_imagens || 'educational content, modern design, clean background' }}"
+            },
+            {
+              "name": "parameters",
+              "value": "={\n  \"num_inference_steps\": 20,\n  \"guidance_scale\": 7.5,\n  \"width\": 1024,\n  \"height\": 576\n}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "binaryData"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2300, 200],
+      "id": "gera-imagem",
+      "name": "🖼️ Gera Imagem IA",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "Hugging Face API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "image-base64",
+              "name": "image_base64",
+              "value": "={{ Buffer.from($binary.data).toString('base64') }}",
+              "type": "string"
+            },
+            {
+              "id": "image-filename",
+              "name": "image_filename",
+              "value": "={{ $('🔄 Converte Áudio').item.json.project_id }}_image.jpg",
+              "type": "string"
+            },
+            {
+              "id": "project-id-image",
+              "name": "project_id",
+              "value": "={{ $('🔄 Converte Áudio').item.json.project_id }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2500, 200],
+      "id": "converte-imagem-base64",
+      "name": "🔄 Converte Imagem"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "youtube_files",
+        "columns": "project_id, filename, file_type, file_data, file_size, created_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"{{ $json.project_id }}\",\n    \"{{ $json.image_filename }}\",\n    \"image/jpeg\",\n    \"{{ $json.image_base64 }}\",\n    {{ $json.image_base64.length }},\n    \"{{ new Date().toISOString() }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [2700, 200],
+      "id": "salva-imagem-mysql",
+      "name": "🖼️ Salva Imagem MySQL",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT filename, file_type, file_data FROM youtube_files WHERE project_id = ? ORDER BY created_at",
+        "additionalFields": {
+          "queryParameters": "=[\"{{ $('🔄 Converte Imagem').item.json.project_id }}\"]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [2900, 200],
+      "id": "busca-arquivos",
+      "name": "📁 Busca Arquivos",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "audio-file",
+              "name": "audio_file",
+              "value": "={{ $json.find(f => f.file_type === 'audio/mp3') }}",
+              "type": "object"
+            },
+            {
+              "id": "image-file",
+              "name": "image_file", 
+              "value": "={{ $json.find(f => f.file_type === 'image/jpeg') }}",
+              "type": "object"
+            },
+            {
+              "id": "project-id-final",
+              "name": "project_id",
+              "value": "={{ $('🔄 Converte Imagem').item.json.project_id }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3100, 200],
+      "id": "prepara-arquivos",
+      "name": "📦 Prepara Arquivos"
+    },
+    {
+      "parameters": {
+        "command": "#!/bin/bash\n\n# Variáveis do projeto\nPROJECT_ID=\"{{ $json.project_id }}\"\nAUDIO_B64=\"{{ $json.audio_file.file_data }}\"\nIMAGE_B64=\"{{ $json.image_file.file_data }}\"\n\n# Cria diretório temporário\nTEMP_DIR=\"/tmp/video_${PROJECT_ID}\"\nmkdir -p \"$TEMP_DIR\"\n\n# Decodifica arquivos\necho \"$AUDIO_B64\" | base64 -d > \"${TEMP_DIR}/audio.mp3\"\necho \"$IMAGE_B64\" | base64 -d > \"${TEMP_DIR}/image.jpg\"\n\n# Gera vídeo com FFmpeg\nffmpeg -y \\\n  -loop 1 -i \"${TEMP_DIR}/image.jpg\" \\\n  -i \"${TEMP_DIR}/audio.mp3\" \\\n  -c:v libx264 -tune stillimage -c:a aac -b:a 192k \\\n  -pix_fmt yuv420p -shortest \\\n  -vf \"scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2\" \\\n  \"${TEMP_DIR}/video.mp4\"\n\n# Converte para base64\nVIDEO_B64=$(base64 < \"${TEMP_DIR}/video.mp4\")\n\n# Retorna resultado\necho \"{\\\"video_base64\\\": \\\"$VIDEO_B64\\\", \\\"video_filename\\\": \\\"${PROJECT_ID}_video.mp4\\\", \\\"temp_dir\\\": \\\"$TEMP_DIR\\\"}\"\n\n# Limpa arquivos temporários\nrm -rf \"$TEMP_DIR\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [3300, 200],
+      "id": "cria-video-ffmpeg",
+      "name": "🎬 Cria Vídeo FFmpeg"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "youtube_files",
+        "columns": "project_id, filename, file_type, file_data, file_size, created_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"{{ $('📦 Prepara Arquivos').item.json.project_id }}\",\n    \"{{ $json.video_filename }}\",\n    \"video/mp4\",\n    \"{{ $json.video_base64 }}\",\n    {{ $json.video_base64.length }},\n    \"{{ new Date().toISOString() }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [3500, 200],
+      "id": "salva-video-mysql",
+      "name": "🎬 Salva Vídeo MySQL",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "youtube_projects",
+        "updateKey": "project_id",
+        "columns": "status, video_gerado, updated_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"video_concluido\",\n    true,\n    \"{{ new Date().toISOString() }}\",\n    \"{{ $('📦 Prepara Arquivos').item.json.project_id }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [3700, 200],
+      "id": "finaliza-projeto",
+      "name": "✅ Finaliza Projeto",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "youtube_process_logs",
+        "columns": "project_id, step_name, status, message, created_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"{{ $('📦 Prepara Arquivos').item.json.project_id }}\",\n    \"processo_completo\",\n    \"success\",\n    \"Vídeo gerado com sucesso e salvo no MySQL\",\n    \"{{ new Date().toISOString() }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [3900, 200],
+      "id": "log-sucesso",
+      "name": "📊 Log Sucesso",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [4100, 200],
+      "id": "resposta-sucesso",
+      "name": "✅ Resposta Sucesso"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "youtube_process_logs",
+        "columns": "project_id, step_name, status, message, created_at",
+        "additionalFields": {
+          "values": "=[\n  [\n    \"erro_tema_nao_encontrado\",\n    \"busca_tema\",\n    \"error\",\n    \"Tema não encontrado ou inativo\",\n    \"{{ new Date().toISOString() }}\"\n  ]\n]"
+        }
+      },
+      "type": "n8n-nodes-base.mysql",
+      "typeVersion": 2.5,
+      "position": [700, 400],
+      "id": "log-erro-tema",
+      "name": "❌ Log Erro Tema",
+      "credentials": {
+        "mysql": {
+          "id": "[CONFIGURE_NO_N8N]",
+          "name": "YouTube MySQL DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Tema não encontrado ou inativo\",\n  \"tema_id\": \"{{ $('🚀 Webhook Início').item.json.tema_id }}\"\n}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 400],
+      "id": "resposta-erro",
+      "name": "❌ Resposta Erro"
+    }
+  ],
+  "connections": {
+    "🚀 Webhook Início": {
+      "main": [
+        [
+          {
+            "node": "📋 Busca Tema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Busca Tema": {
+      "main": [
+        [
+          {
+            "node": "✅ Tema Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Tema Existe?": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Setup Variáveis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "❌ Log Erro Tema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Setup Variáveis": {
+      "main": [
+        [
+          {
+            "node": "📁 Cria Projeto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📁 Cria Projeto": {
+      "main": [
+        [
+          {
+            "node": "✏️ Gera Roteiro IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✏️ Gera Roteiro IA": {
+      "main": [
+        [
+          {
+            "node": "📝 Extrai Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Extrai Roteiro": {
+      "main": [
+        [
+          {
+            "node": "💾 Salva Roteiro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salva Roteiro": {
+      "main": [
+        [
+          {
+            "node": "🎵 Gera Áudio TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎵 Gera Áudio TTS": {
+      "main": [
+        [
+          {
+            "node": "🔄 Converte Áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Converte Áudio": {
+      "main": [
+        [
+          {
+            "node": "💿 Salva Áudio MySQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💿 Salva Áudio MySQL": {
+      "main": [
+        [
+          {
+            "node": "🖼️ Gera Imagem IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🖼️ Gera Imagem IA": {
+      "main": [
+        [
+          {
+            "node": "🔄 Converte Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Converte Imagem": {
+      "main": [
+        [
+          {
+            "node": "🖼️ Salva Imagem MySQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🖼️ Salva Imagem MySQL": {
+      "main": [
+        [
+          {
+            "node": "📁 Busca Arquivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📁 Busca Arquivos": {
+      "main": [
+        [
+          {
+            "node": "📦 Prepara Arquivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Prepara Arquivos": {
+      "main": [
+        [
+          {
+            "node": "🎬 Cria Vídeo FFmpeg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎬 Cria Vídeo FFmpeg": {
+      "main": [
+        [
+          {
+            "node": "🎬 Salva Vídeo MySQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎬 Salva Vídeo MySQL": {
+      "main": [
+        [
+          {
+            "node": "✅ Finaliza Projeto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Finaliza Projeto": {
+      "main": [
+        [
+          {
+            "node": "📊 Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Log Sucesso": {
+      "main": [
+        [
+          {
+            "node": "✅ Resposta Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "❌ Log Erro Tema": {
+      "main": [
+        [
+          {
+            "node": "❌ Resposta Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "youtube-automation-mysql-optimized"
+  },
+  "tags": [
+    {
+      "id": "youtube-automation",
+      "name": "YouTube Automation"
+    },
+    {
+      "id": "mysql-optimized", 
+      "name": "MySQL Optimized"
+    }
+  ]
+}
