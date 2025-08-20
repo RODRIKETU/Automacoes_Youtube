@@ -181,40 +181,40 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "url": "https://speech.googleapis.com/v1/speech:recognize",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer gsk_SUA_APIKEY"
+              "value": "Bearer {{ $env.GOOGLE_GEMINI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
         },
         "sendBody": true,
-        "contentType": "multipart-form-data",
+        "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
-              "name": "model",
-              "value": "whisper-large-v3"
+              "name": "config",
+              "value": {
+                "encoding": "MP3",
+                "sampleRateHertz": 44100,
+                "languageCode": "pt-BR",
+                "enableWordTimeOffsets": true,
+                "enableWordConfidence": true,
+                "model": "latest_long"
+              }
             },
             {
-              "name": "response_format",
-              "value": "verbose_json"
-            },
-            {
-              "parameterType": "formBinaryData",
-              "name": "file",
-              "inputDataFieldName": "data"
-            },
-            {
-              "name": "timestamp_granularities[]",
-              "value": "segment"
-            },
-            {
-              "name": "timestamp_granularities[]",
-              "value": "word"
+              "name": "audio",
+              "value": {
+                "content": "={{ $binary.data.data }}"
+              }
             }
           ]
         },
@@ -227,12 +227,12 @@
         704
       ],
       "id": "ff707662-c3a4-4474-9e9e-6e1c32e39c80",
-      "name": "transcreve  audio no GROQ"
+      "name": "transcreve audio no Google Speech"
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const narracaoIndex = $itemIndex;\nconst words = $json.words;\n\nif (!Array.isArray(words)) {\n  throw new Error(\"words inválidos\");\n}\n\nfunction dividirPorPalavras(wordsArray) {\n  const blocos = [];\n  let atual = [];\n  let blocoStart = wordsArray.length > 0 ? wordsArray[0].start : 0;\n\n  wordsArray.forEach((wordObj, index) => {\n    atual.push(wordObj.word);\n\n    const ehUltima = index === wordsArray.length - 1;\n    const passouLimite = atual.length >= 7 || ehUltima;\n\n    if (passouLimite) {\n      const blocoTexto = atual.join(' ');\n      const blocoEnd = wordObj.end;\n\n      blocos.push({\n        text: blocoTexto,\n        startTime: blocoStart,\n        endTime: blocoEnd\n      });\n\n      blocoStart = blocoEnd;\n      atual = [];\n    }\n  });\n\n  return blocos;\n}\n\nconst blocosFinal = dividirPorPalavras(words);\n\nreturn {\n  json: {\n    narracaoIndex,\n    blocos: blocosFinal,\n    words\n  }\n};\n"
+        "jsCode": "const narracaoIndex = $itemIndex;\n\n// Google Speech API retorna structure diferente do GROQ\n// Extrair palavras com timestamps da resposta do Google Speech\nconst results = $json.results || [];\nconst words = [];\n\nif (results.length > 0 && results[0].alternatives && results[0].alternatives.length > 0) {\n  const alternative = results[0].alternatives[0];\n  \n  if (alternative.words) {\n    // Google Speech API format\n    alternative.words.forEach(wordInfo => {\n      words.push({\n        word: wordInfo.word,\n        start: parseFloat(wordInfo.startTime?.replace('s', '') || '0'),\n        end: parseFloat(wordInfo.endTime?.replace('s', '') || '0')\n      });\n    });\n  }\n}\n\nif (!Array.isArray(words) || words.length === 0) {\n  throw new Error(\"Nenhuma palavra com timestamp encontrada na resposta do Google Speech\");\n}\n\nfunction dividirPorPalavras(wordsArray) {\n  const blocos = [];\n  let atual = [];\n  let blocoStart = wordsArray.length > 0 ? wordsArray[0].start : 0;\n\n  wordsArray.forEach((wordObj, index) => {\n    atual.push(wordObj.word);\n\n    const ehUltima = index === wordsArray.length - 1;\n    const passouLimite = atual.length >= 7 || ehUltima;\n\n    if (passouLimite) {\n      const blocoTexto = atual.join(' ');\n      const blocoEnd = wordObj.end;\n\n      blocos.push({\n        text: blocoTexto,\n        startTime: blocoStart,\n        endTime: blocoEnd\n      });\n\n      blocoStart = blocoEnd;\n      atual = [];\n    }\n  });\n\n  return blocos;\n}\n\nconst blocosFinal = dividirPorPalavras(words);\n\nreturn {\n  json: {\n    narracaoIndex,\n    blocos: blocosFinal,\n    words\n  }\n};\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -241,7 +241,7 @@
         704
       ],
       "id": "9c22f1c2-3fda-4ca9-87d1-c7539910af45",
-      "name": "Limpa o retorno do GROQ"
+      "name": "Limpa o retorno do Google Speech"
     },
     {
       "parameters": {
@@ -2495,25 +2495,25 @@
       "main": [
         [
           {
-            "node": "transcreve  audio no GROQ",
+            "node": "transcreve audio no Google Speech",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "transcreve  audio no GROQ": {
+    "transcreve audio no Google Speech": {
       "main": [
         [
           {
-            "node": "Limpa o retorno do GROQ",
+            "node": "Limpa o retorno do Google Speech",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Limpa o retorno do GROQ": {
+    "Limpa o retorno do Google Speech": {
       "main": [
         [
           {

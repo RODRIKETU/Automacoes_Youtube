@@ -246,40 +246,40 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "url": "https://speech.googleapis.com/v1/speech:recognize",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer gsk_SUA_APIKEY"
+              "value": "Bearer {{ $env.GOOGLE_GEMINI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
         },
         "sendBody": true,
-        "contentType": "multipart-form-data",
+        "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
-              "name": "model",
-              "value": "whisper-large-v3"
+              "name": "config",
+              "value": {
+                "encoding": "MP3",
+                "sampleRateHertz": 44100,
+                "languageCode": "pt-BR",
+                "enableWordTimeOffsets": true,
+                "enableWordConfidence": true,
+                "model": "latest_long"
+              }
             },
             {
-              "name": "response_format", 
-              "value": "verbose_json"
-            },
-            {
-              "parameterType": "formBinaryData",
-              "name": "file",
-              "inputDataFieldName": "data"
-            },
-            {
-              "name": "timestamp_granularities[]",
-              "value": "segment"
-            },
-            {
-              "name": "timestamp_granularities[]",
-              "value": "word"
+              "name": "audio",
+              "value": {
+                "content": "={{ $binary.data.data }}"
+              }
             }
           ]
         },
@@ -288,8 +288,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [-8176, 704],
-      "id": "transcreve-groq",
-      "name": "Transcreve no GROQ"
+      "id": "transcreve-google-speech",
+      "name": "Transcreve no Google Speech"
     },
     {
       "parameters": {
@@ -638,7 +638,7 @@
       "main": [
         [
           {
-            "node": "Transcreve no GROQ",
+            "node": "Transcreve no Google Speech",
             "type": "main",
             "index": 0
           }

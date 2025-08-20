@@ -92,7 +92,7 @@ http://localhost:3000
 ## 🔌 APIs Integradas
 
 - **🎤 ElevenLabs** - Text-to-Speech
-- **🧠 GROQ** - Transcrição de áudio
+- **🧠 Google Speech** - Transcrição de áudio com IA
 - **🖼️ Replicate** - Geração de imagens
 - **📺 YouTube API** - Upload e configuração
 - **☁️ Google Drive** - Backup e armazenamento
@@ -174,7 +174,7 @@ graph TD
 
 ### **IA e APIs**
 - **ElevenLabs** - Text-to-Speech
-- **GROQ** - Speech-to-Text
+- **Google Speech API** - Speech-to-Text com timestamps
 - **Replicate** - Image Generation
 - **Google Gemini** - Text Generation
 
